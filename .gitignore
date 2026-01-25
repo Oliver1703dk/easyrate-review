@@ -1,0 +1,61 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+dist
+build
+.turbo
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+!.env.example
+
+# IDE / Editor
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage
+.vitest
+
+# Logs
+*.log
+logs
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Vite
+.vite
+
+# Vercel
+.vercel
+
+# Sentry
+.sentryclirc
+
+# MongoDB Memory Server (test binary cache)
+.cache/mongodb-binaries
+
+# Misc
+.cache
+tmp
+temp
+*.tmp
+*.temp
