@@ -78,7 +78,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error(error.error?.message || 'Login failed');
       }
 
-      const data: AuthResponse = await response.json();
+      // Backend wraps response in { success: true, data: AuthResponse }
+      const result = await response.json();
+      const data: AuthResponse = result.data;
       saveAuthState(data);
     },
     [saveAuthState]
@@ -97,7 +99,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error(error.error?.message || 'Registration failed');
       }
 
-      const data: AuthResponse = await response.json();
+      // Backend wraps response in { success: true, data: AuthResponse }
+      const result = await response.json();
+      const data: AuthResponse = result.data;
       saveAuthState(data);
     },
     [saveAuthState]
