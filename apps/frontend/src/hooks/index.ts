@@ -6,3 +6,4 @@ export { useNotificationStats } from './useNotificationStats';
 export { useReviews } from './useReviews';
 export { useIntegrations } from './useIntegrations';
 export { useBusinessSettings } from './useBusinessSettings';
+export { useFlowSettings } from './useFlowSettings';

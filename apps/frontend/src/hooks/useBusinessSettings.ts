@@ -39,7 +39,8 @@ export function useBusinessSettings(): UseBusinessSettingsResult {
       }
 
       const data = await response.json();
-      setBusiness(data);
+      // API returns { success: true, data: { business: {...} } }
+      setBusiness(data.data?.business ?? data.business ?? data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -72,8 +73,9 @@ export function useBusinessSettings(): UseBusinessSettingsResult {
           throw new Error('Failed to update settings');
         }
 
-        const updatedBusiness = await response.json();
-        setBusiness(updatedBusiness);
+        const updatedData = await response.json();
+        // API returns { success: true, data: { business: {...} } }
+        setBusiness(updatedData.data?.business ?? updatedData.business ?? updatedData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
         throw err;

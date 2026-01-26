@@ -7,6 +7,7 @@ import {
   IntegrationsPage,
   IntegrationDetailPage,
   SettingsPage,
+  FlowPage,
 } from './pages/dashboard';
 import { DashboardLayout } from './components/dashboard/layout';
 import { ProtectedRoute } from './components/shared';
@@ -36,6 +37,7 @@ function App() {
             <Route path="reviews" element={<ReviewsPage />} />
             <Route path="integrations" element={<IntegrationsPage />} />
             <Route path="integrations/:platform" element={<IntegrationDetailPage />} />
+            <Route path="flow" element={<FlowPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
 
