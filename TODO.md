@@ -109,6 +109,12 @@
 
 ---
 
+## 6. EasyTable configuration
+
+- [ ] Verify on EasyTable that the configuration works (connection, API key, order/booking sync)
+
+---
+
 ## Notes
 
 - All AI features require human approval before sending

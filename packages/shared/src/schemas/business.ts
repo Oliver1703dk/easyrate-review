@@ -1,15 +1,18 @@
 import { z } from 'zod';
 
+// Helper for optional URL fields that also accept empty strings
+const optionalUrl = z.union([z.string().url(), z.literal('')]).optional();
+
 export const businessSettingsSchema = z.object({
   defaultDelayMinutes: z.number().int().min(0).max(1440),
   smsEnabled: z.boolean(),
   emailEnabled: z.boolean(),
-  googleReviewUrl: z.string().url().optional(),
+  googleReviewUrl: optionalUrl,
   primaryColor: z
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/)
     .optional(),
-  logoUrl: z.string().url().optional(),
+  logoUrl: optionalUrl,
 });
 
 export const integrationConfigSchema = z.object({
@@ -47,7 +50,7 @@ export const updateBusinessSchema = z.object({
         .string()
         .regex(/^#[0-9A-Fa-f]{6}$/)
         .optional(),
-      logoUrl: z.string().url().optional(),
+      logoUrl: optionalUrl,
     })
     .optional(),
 });
