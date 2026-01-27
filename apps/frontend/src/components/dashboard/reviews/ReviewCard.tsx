@@ -48,6 +48,11 @@ export function ReviewCard({ review }: ReviewCardProps) {
                 )}
               </Badge>
               <Badge variant="outline">{sourceLabels[review.sourcePlatform]}</Badge>
+              {review.metadata?.isTest === true && (
+                <Badge variant="outline" className="border-yellow-300 bg-yellow-50 text-yellow-700">
+                  {DASHBOARD_TEXT.test.testBadge}
+                </Badge>
+              )}
             </div>
 
             {/* Feedback text */}
@@ -57,13 +62,13 @@ export function ReviewCard({ review }: ReviewCardProps) {
 
             {/* Customer info and timestamp */}
             <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-              {review.customer.name && (
+              {review.customer?.name && (
                 <span>
                   {DASHBOARD_TEXT.reviews.from}: {review.customer.name}
                 </span>
               )}
-              {review.customer.email && <span>{review.customer.email}</span>}
-              {review.customer.phone && <span>{review.customer.phone}</span>}
+              {review.customer?.email && <span>{review.customer.email}</span>}
+              {review.customer?.phone && <span>{review.customer.phone}</span>}
               <span>{formatDate(review.createdAt)}</span>
             </div>
           </div>

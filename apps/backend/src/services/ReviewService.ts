@@ -6,6 +6,7 @@ import { calculatePagination, PaginationMeta } from '../utils/response.js';
 
 interface CreateReviewWithConsent extends Omit<CreateReviewInput, 'businessId'> {
   consent?: ConsentRecord;
+  metadata?: Record<string, unknown>;
 }
 
 function toReviewType(doc: ReviewDocument): ReviewType {
@@ -49,6 +50,7 @@ export class ReviewService {
       isPublic: false,
       submittedExternalReview: false,
       consent,
+      metadata: input.metadata,
     });
 
     await review.save();

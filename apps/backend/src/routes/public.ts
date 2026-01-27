@@ -129,14 +129,23 @@ router.post(
         version: '1.0',
       };
 
-      const review = await reviewService.create(businessId, {
+      // Check query param for test flag
+      const isTest = req.query.isTest === 'true';
+
+      const reviewInput: Parameters<typeof reviewService.create>[1] = {
         rating: req.body.rating,
         feedbackText: req.body.feedbackText,
         customer: req.body.customer,
         photos: req.body.photos,
         sourcePlatform: 'direct', // Public submissions are direct
         consent: consentRecord,
-      });
+      };
+
+      if (isTest) {
+        reviewInput.metadata = { isTest: true };
+      }
+
+      const review = await reviewService.create(businessId, reviewInput);
 
       // If user indicated they submitted external review, update it
       if (req.body.submittedExternalReview) {

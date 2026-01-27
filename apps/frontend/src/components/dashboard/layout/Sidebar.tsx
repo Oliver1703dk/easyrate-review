@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { BarChart3, MessageSquare, Plug, GitBranch, Settings, LogOut } from 'lucide-react';
+import { BarChart3, MessageSquare, Plug, GitBranch, FlaskConical, Settings, LogOut } from 'lucide-react';
 import { DASHBOARD_TEXT } from '@easyrate/shared';
 import { cn } from '@easyrate/ui/lib';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -9,6 +9,7 @@ const navItems = [
   { path: '/dashboard/reviews', label: DASHBOARD_TEXT.nav.reviews, icon: MessageSquare },
   { path: '/dashboard/integrations', label: DASHBOARD_TEXT.nav.integrations, icon: Plug },
   { path: '/dashboard/flow', label: DASHBOARD_TEXT.nav.flow, icon: GitBranch },
+  { path: '/dashboard/test', label: DASHBOARD_TEXT.nav.test, icon: FlaskConical },
   { path: '/dashboard/settings', label: DASHBOARD_TEXT.nav.settings, icon: Settings },
 ];
 

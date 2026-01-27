@@ -36,6 +36,7 @@ export interface CreateReviewInput {
   orderId?: string;
   photos?: string[];
   consent?: ConsentRecord;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ReviewFilters {
