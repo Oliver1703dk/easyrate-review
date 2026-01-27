@@ -241,6 +241,14 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // ============ Test ============
+
+  async getTestReviewLink(): Promise<{ link: string }> {
+    return this.request<{ link: string }>('/test/review-link', {
+      method: 'POST',
+    });
+  }
 }
 
 export const api = new ApiClient();

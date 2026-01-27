@@ -1,7 +1,7 @@
-import crypto from 'crypto';
 import { Business, type BusinessDocument } from '../models/Business.js';
 import { orderQueueService, type QueuedOrder } from '../services/OrderQueueService.js';
 import { notificationService } from '../services/NotificationService.js';
+import { reviewTokenService } from '../services/ReviewTokenService.js';
 
 interface ProcessorConfig {
   intervalMs: number;
@@ -125,10 +125,27 @@ class OrderQueueProcessor {
         return;
       }
 
-      // Generate review link with unique token
-      const reviewToken = crypto.randomBytes(16).toString('hex');
+      // Generate JWT-based review link with embedded customer info
+      // Build customer object only with defined values
+      const customer: { email?: string; phone?: string; name?: string } = {};
+      if (orderData.customerEmail) {
+        customer.email = orderData.customerEmail;
+      }
+      if (orderData.customerPhone) {
+        customer.phone = orderData.customerPhone;
+      }
+      if (orderData.customerName) {
+        customer.name = orderData.customerName;
+      }
+
+      const reviewToken = reviewTokenService.generateToken({
+        businessId,
+        ...(Object.keys(customer).length > 0 && { customer }),
+        orderId: orderData.orderId,
+        sourcePlatform: orderData.platform,
+      });
       const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-      const reviewLink = `${baseUrl}/r/${businessId}?token=${reviewToken}&order=${orderData.orderId}`;
+      const reviewLink = `${baseUrl}/r/${reviewToken}`;
 
       // Get message content
       const smsTemplate = business.messageTemplates.sms ||
