@@ -18,7 +18,13 @@
 
 ---
 
-## 2. AI Insights (from ai_features_mvp.md)
+## 2. Fix Analytics Dashboard
+
+**Overview:** Fix the analytics dashboard so it shows the correct values. The overview page does not display review and notification stats correctly because the frontend receives the wrong response shape and field names from the API.
+
+---
+
+## 3. AI Insights (from ai_features_mvp.md)
 
 **Overview:** Implement AI-powered sentiment analysis and theme extraction from customer reviews. The system will analyze reviews from the last 30 days, generate overall sentiment scores, identify positive and negative themes, and display actionable insights in the dashboard. Insights are cached for 24 hours and can be manually refreshed. This provides businesses with a high-level understanding of customer feedback patterns.
 
@@ -41,7 +47,7 @@
 
 ---
 
-## 3. AI Response Generation (from ai_features_mvp.md)
+## 4. AI Response Generation (from ai_features_mvp.md)
 
 **Overview:** Automatically generate draft responses to customer reviews using AI. The system generates context-aware, tone-appropriate responses in Danish that businesses can edit before sending. Different prompts are used for negative (1-3 stars) vs positive (4-5 stars) reviews. All AI-generated responses require human approval before sending to customers via email.
 
@@ -62,7 +68,7 @@
 
 ---
 
-## 4. Google Reviews Integration (from system_overview_full.md)
+## 5. Google Reviews Integration (from system_overview_full.md)
 
 **Overview:** Integrate with Google Business Profile API to fetch, display, and reply to Google reviews directly in the admin dashboard. This includes syncing external reviews, matching them to internal review flows through attribution, and enabling businesses to reply to Google reviews with AI-generated drafts. Reviews from Google will be displayed alongside internal reviews with filtering capabilities.
 
@@ -87,7 +93,7 @@
 
 ---
 
-## 5. Fix Flow Screen
+## 6. Fix Flow Screen
 
 **Overview:** Ensure the flow page sidebar shows the correct configuration or preview screen when each flow node is clicked. Currently only the landing node shows a dedicated panel; trigger, SMS, email, branch, internal feedback, external review, and thank-you nodes do not show node-specific content. Each node type should display the appropriate settings, copy, or preview so users can understand and configure that step of the flow.
 
@@ -109,7 +115,7 @@
 
 ---
 
-## 6. EasyTable configuration
+## 7. EasyTable configuration
 
 - [ ] Verify on EasyTable that the configuration works (connection, API key, order/booking sync)
 
