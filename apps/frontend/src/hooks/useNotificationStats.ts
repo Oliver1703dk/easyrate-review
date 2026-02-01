@@ -35,8 +35,8 @@ export function useNotificationStats(): UseNotificationStatsResult {
         throw new Error('Failed to fetch notification stats');
       }
 
-      const data = await response.json();
-      setStats(data);
+      const json = await response.json();
+      setStats(json.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

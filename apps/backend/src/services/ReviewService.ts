@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import type { CreateReviewInput, Review as ReviewType, ReviewFilters, ConsentRecord } from '@easyrate/shared';
+import type { CreateReviewInput, Review as ReviewType, ReviewFilters, ConsentRecord, ReviewStats } from '@easyrate/shared';
 import { EMAIL_TEMPLATES } from '@easyrate/shared';
 import { Review, ReviewDocument } from '../models/Review.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
@@ -14,15 +14,6 @@ interface CreateReviewWithConsent extends Omit<CreateReviewInput, 'businessId'> 
 
 function toReviewType(doc: ReviewDocument): ReviewType {
   return doc.toJSON() as unknown as ReviewType;
-}
-
-export interface ReviewStats {
-  totalCount: number;
-  averageRating: number;
-  ratingDistribution: Record<1 | 2 | 3 | 4 | 5, number>;
-  positiveCount: number;
-  negativeCount: number;
-  externalReviewCount: number;
 }
 
 export interface PaginatedReviews {
@@ -123,55 +114,99 @@ export class ReviewService {
     };
   }
 
-  async getStats(businessId: string): Promise<ReviewStats> {
+  async getStats(businessId: string, dateRange?: { from: Date; to: Date }): Promise<ReviewStats> {
+    const businessObjectId = new mongoose.Types.ObjectId(businessId);
+
+    // Build date match condition
+    const dateMatch: Record<string, unknown> = dateRange
+      ? { createdAt: { $gte: dateRange.from, $lte: dateRange.to } }
+      : {};
+
+    // Calculate previous period for trend (same duration before the range)
+    let previousPeriodCount = 0;
+    if (dateRange) {
+      const duration = dateRange.to.getTime() - dateRange.from.getTime();
+      const previousFrom = new Date(dateRange.from.getTime() - duration);
+      const previousTo = dateRange.from;
+
+      previousPeriodCount = await Review.countDocuments({
+        businessId: businessObjectId,
+        createdAt: { $gte: previousFrom, $lt: previousTo },
+      });
+    }
+
+    // Main aggregation for current period stats
     const [aggregation] = await Review.aggregate([
-      { $match: { businessId: new mongoose.Types.ObjectId(businessId) } },
+      { $match: { businessId: businessObjectId, ...dateMatch } },
       {
         $group: {
           _id: null,
-          totalCount: { $sum: 1 },
+          total: { $sum: 1 },
           totalRating: { $sum: '$rating' },
           rating1: { $sum: { $cond: [{ $eq: ['$rating', 1] }, 1, 0] } },
           rating2: { $sum: { $cond: [{ $eq: ['$rating', 2] }, 1, 0] } },
           rating3: { $sum: { $cond: [{ $eq: ['$rating', 3] }, 1, 0] } },
           rating4: { $sum: { $cond: [{ $eq: ['$rating', 4] }, 1, 0] } },
           rating5: { $sum: { $cond: [{ $eq: ['$rating', 5] }, 1, 0] } },
-          externalReviewCount: {
-            $sum: { $cond: ['$submittedExternalReview', 1, 0] },
-          },
         },
       },
     ]);
 
+    // Source aggregation
+    const sourceAggregation = await Review.aggregate([
+      { $match: { businessId: businessObjectId, ...dateMatch } },
+      {
+        $group: {
+          _id: '$sourcePlatform',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Build bySource map
+    const bySource: Record<string, number> = {
+      dully: 0,
+      easytable: 0,
+      direct: 0,
+    };
+    for (const src of sourceAggregation) {
+      if (src._id && bySource.hasOwnProperty(src._id)) {
+        bySource[src._id] = src.count;
+      }
+    }
+
     if (!aggregation) {
       return {
-        totalCount: 0,
-        averageRating: 0,
-        ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
-        positiveCount: 0,
-        negativeCount: 0,
-        externalReviewCount: 0,
+        total: 0,
+        avgRating: 0,
+        byRating: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+        bySource,
+        recentTrend: 0,
       };
     }
 
-    const negativeCount = aggregation.rating1 + aggregation.rating2 + aggregation.rating3;
-    const positiveCount = aggregation.rating4 + aggregation.rating5;
+    // Calculate trend percentage
+    let recentTrend = 0;
+    if (dateRange && previousPeriodCount > 0) {
+      recentTrend = Math.round(((aggregation.total - previousPeriodCount) / previousPeriodCount) * 100);
+    } else if (dateRange && previousPeriodCount === 0 && aggregation.total > 0) {
+      recentTrend = 100; // 100% increase if no previous data
+    }
 
     return {
-      totalCount: aggregation.totalCount,
-      averageRating: aggregation.totalCount > 0
-        ? Math.round((aggregation.totalRating / aggregation.totalCount) * 10) / 10
+      total: aggregation.total,
+      avgRating: aggregation.total > 0
+        ? Math.round((aggregation.totalRating / aggregation.total) * 10) / 10
         : 0,
-      ratingDistribution: {
+      byRating: {
         1: aggregation.rating1,
         2: aggregation.rating2,
         3: aggregation.rating3,
         4: aggregation.rating4,
         5: aggregation.rating5,
       },
-      positiveCount,
-      negativeCount,
-      externalReviewCount: aggregation.externalReviewCount,
+      bySource,
+      recentTrend,
     };
   }
 

@@ -56,14 +56,25 @@ router.get(
   }
 );
 
+// Stats query schema with optional date range
+const statsQuerySchema = z.object({
+  fromDate: z.string().optional(),
+  toDate: z.string().optional(),
+});
+
 // GET /api/v1/reviews/stats - Get review statistics
 router.get(
   '/stats',
   authenticateJwt,
+  validateQuery(statsQuerySchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const stats = await reviewService.getStats(req.businessId!);
-      sendSuccess(res, { stats });
+      const { fromDate, toDate } = req.query as z.infer<typeof statsQuerySchema>;
+      const dateRange = fromDate && toDate
+        ? { from: new Date(fromDate), to: new Date(toDate) }
+        : undefined;
+      const stats = await reviewService.getStats(req.businessId!, dateRange);
+      sendSuccess(res, stats);
     } catch (error) {
       next(error);
     }

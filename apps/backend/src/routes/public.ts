@@ -4,6 +4,7 @@ import { reviewRatingSchema, reviewCustomerSchema } from '@easyrate/shared';
 import type { ReviewTokenPayload, ReviewTokenCustomer } from '@easyrate/shared';
 import { Business, type BusinessDocument } from '../models/Business.js';
 import { reviewService } from '../services/ReviewService.js';
+import { notificationService } from '../services/NotificationService.js';
 import { storageService, ALLOWED_CONTENT_TYPES } from '../services/StorageService.js';
 import { reviewTokenService } from '../services/ReviewTokenService.js';
 import { validateBody, validateParams } from '../middleware/validate.js';
@@ -83,6 +84,14 @@ router.get(
     try {
       const token = req.params.token as string;
       const { business, tokenPayload } = await resolveToken(token);
+
+      // Track link click if notificationId is present in JWT
+      if (tokenPayload?.notificationId) {
+        // Fire and forget - don't block response for tracking
+        notificationService.updateStatus(tokenPayload.notificationId, 'clicked').catch((err) => {
+          console.warn(`[public] Failed to track click for notification ${tokenPayload.notificationId}:`, err.message);
+        });
+      }
 
       // Access GDPR settings safely
       const gdprSettings = (business.settings as { gdpr?: { privacyPolicyUrl?: string } } | undefined)?.gdpr;
