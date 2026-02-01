@@ -1,8 +1,11 @@
 import mongoose from 'mongoose';
 import type { CreateReviewInput, Review as ReviewType, ReviewFilters, ConsentRecord } from '@easyrate/shared';
+import { EMAIL_TEMPLATES } from '@easyrate/shared';
 import { Review, ReviewDocument } from '../models/Review.js';
-import { NotFoundError } from '../utils/errors.js';
+import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { calculatePagination, PaginationMeta } from '../utils/response.js';
+import { getEmailProvider, isEmailConfigured } from '../providers/ProviderFactory.js';
+import { businessService } from './BusinessService.js';
 
 interface CreateReviewWithConsent extends Omit<CreateReviewInput, 'businessId'> {
   consent?: ConsentRecord;
@@ -194,6 +197,80 @@ export class ReviewService {
     if (!result) {
       throw new NotFoundError('Anmeldelse ikke fundet');
     }
+  }
+
+  async replyToReview(
+    businessId: string,
+    reviewId: string,
+    text: string
+  ): Promise<ReviewType> {
+    // Find review scoped to business
+    const review = await Review.findOne({ _id: reviewId, businessId });
+    if (!review) {
+      throw new NotFoundError('Anmeldelse ikke fundet');
+    }
+
+    // Check customer has email
+    if (!review.customer?.email) {
+      throw new ValidationError('Kunden har ingen email', { code: 'NO_CUSTOMER_EMAIL' });
+    }
+
+    // Check no existing response
+    if (review.response) {
+      throw new ValidationError('Anmeldelsen er allerede besvaret', { code: 'ALREADY_REPLIED' });
+    }
+
+    // Check email provider is configured
+    if (!isEmailConfigured()) {
+      throw new ValidationError('Email provider er ikke konfigureret', { code: 'EMAIL_NOT_CONFIGURED' });
+    }
+
+    // Get business info for email template
+    const business = await businessService.findByIdOrThrow(businessId);
+
+    // Build email content from template
+    const customerName = review.customer.name || 'Kunde';
+    const subject = EMAIL_TEMPLATES.reviewResponse.subject.replace('{{businessName}}', business.name);
+    const body = EMAIL_TEMPLATES.reviewResponse.body
+      .replace('{{customerName}}', customerName)
+      .replace('{{responseText}}', text)
+      .replace('{{businessName}}', business.name);
+
+    // Send email
+    const emailProvider = getEmailProvider();
+    const sendResult = await emailProvider.send({
+      to: review.customer.email,
+      subject,
+      content: body,
+    });
+
+    if (!sendResult.success) {
+      throw new ValidationError('Kunne ikke sende email', { code: 'EMAIL_SEND_FAILED', error: sendResult.error });
+    }
+
+    // Update review with response
+    const now = new Date();
+    const responseData: {
+      text: string;
+      sentAt: Date;
+      sentVia: 'email';
+      messageId?: string;
+      status: 'sent';
+      createdAt: Date;
+    } = {
+      text,
+      sentAt: now,
+      sentVia: 'email',
+      status: 'sent',
+      createdAt: now,
+    };
+    if (sendResult.messageId) {
+      responseData.messageId = sendResult.messageId;
+    }
+    review.response = responseData;
+
+    await review.save();
+    return toReviewType(review);
   }
 }
 

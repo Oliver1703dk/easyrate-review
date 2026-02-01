@@ -20,28 +20,48 @@
 
 ## 2. Fix Analytics Dashboard
 
-**Overview:** Fix the analytics dashboard so it shows the correct values. The overview page does not display review and notification stats correctly because the frontend receives the wrong response shape and field names from the API.
+**Overview:** Fix the analytics dashboard so it shows the correct values. The overview page does not display review and notification stats correctly because the frontend receives the wrong response shape and field names from the API. Also fix notification opening/click tracking for SMS and email so opened/clicked stats are accurate.
+
+**Metric definitions (all filtered by selected time interval):**
+- **Totale anmeldelser:** Combined count of internal platform reviews + Google reviews (the only trackable sources)
+- **Gns. rating:** Average score across both Google and internal reviews
+- **Kunder anmodet:** Number of customers we sent SMS and email to
+- **Svarrate:** Percentage of requests that resulted in a review (reviews / requests)
+- **SMS sendt:** Count of SMS messages sent to customers
+- **Email sendt:** Count of emails sent to customers (separate from SMS since some phone numbers or emails may fail or be missing)
+- **Green/red trend numbers:** Growth or decline compared to previous period (e.g. if "last 30 days" is selected, compare to the 30 days before that; same logic for weekly or monthly views)
+
+**Notification opening tracking (JWT + notificationId approach):**
+- [ ] Update the Notification model with click tracking fields
+- [ ] Add notificationId to JWT generation in processOrderQueue
+- [ ] Call a tracking method in the GET endpoint of public.ts when the landing page is loaded
+- [ ] Add/align stats (opened, clicked by channel) to the dashboard API and overview
 
 ---
 
 ## 3. AI Insights (from ai_features_mvp.md)
 
-**Overview:** Implement AI-powered sentiment analysis and theme extraction from customer reviews. The system will analyze reviews from the last 30 days, generate overall sentiment scores, identify positive and negative themes, and display actionable insights in the dashboard. Insights are cached for 24 hours and can be manually refreshed. This provides businesses with a high-level understanding of customer feedback patterns.
+**Overview:** Implement AI-powered sentiment analysis and theme extraction from customer reviews. The system analyzes reviews from the last 30 days, generates overall sentiment scores, and identifies key areas/themes customers mention. Recurring themes are aggregated so each theme shows how many customers mentioned it and how many times; each theme is classified by severity (critical / high / medium / low). Insights regenerate on a weekly basis; users can also trigger a manual regenerate at any time. All analyses are stored so that in the future progress and trends from previous AI insights can be implemented (e.g. comparison over time). This gives businesses a clear view of what matters most to customers and how often it comes up.
 
 ### Backend
 - [ ] Create AI provider abstraction interface (`AIProvider`)
 - [ ] Implement Grok API provider (with OpenAI fallback)
-- [ ] Create `GET /api/v1/insights` endpoint (returns cached insights)
-- [ ] Create `POST /api/v1/insights/refresh` endpoint (regenerates insights)
-- [ ] Add insights caching logic (24h default, refresh on 10+ new reviews)
+- [ ] Create `GET /api/v1/insights` endpoint (returns current/cached insights)
+- [ ] Create `POST /api/v1/insights/refresh` endpoint (regenerates insights on demand)
+- [ ] Add weekly regeneration of AI insights (scheduled job)
+- [ ] Persist insight runs (store analyses) so future “progress from previous insights” / trend comparison is possible
 - [ ] Add `ai_settings` to Business model
 - [ ] Implement batch review analysis (last 30 days)
 - [ ] Create InsightsResult data model
+- [ ] Detect key areas/themes customers mention; aggregate recurring themes
+- [ ] For each theme: store count of customers who mentioned it and number of mentions
+- [ ] Classify theme severity: critical / high / medium / low
 
 ### Frontend
 - [ ] Add "Indsigter" section to OverviewPage
-- [ ] Display sentiment score and themes
-- [ ] Add manual refresh button
+- [ ] Display sentiment score and themes (with customer count and mention count per theme)
+- [ ] Show severity (critical / high / medium / low) per theme
+- [ ] Add "Regenerate" button so user can trigger manual refresh
 - [ ] Show review count and date range
 - [ ] Add loading states for insights generation
 
@@ -95,7 +115,7 @@
 
 ## 6. Fix Flow Screen
 
-**Overview:** Ensure the flow page sidebar shows the correct configuration or preview screen when each flow node is clicked. Currently only the landing node shows a dedicated panel; trigger, SMS, email, branch, internal feedback, external review, and thank-you nodes do not show node-specific content. Each node type should display the appropriate settings, copy, or preview so users can understand and configure that step of the flow.
+**Overview:** Ensure the flow page sidebar shows the correct configuration or preview screen when each flow node is clicked. Currently only the landing node shows a dedicated panel; trigger, SMS, email, branch, internal feedback, external review, and thank-you nodes do not show node-specific content. Each node type should display the appropriate settings, copy, or preview so users can understand and configure that step of the flow. Only nodes that has configuration should show configuration. 
 
 ### Frontend
 - [ ] Show correct sidebar panel when trigger node is selected (e.g. trigger description, integration source)
@@ -112,12 +132,30 @@
 ### Notes
 - Sidebar layout and content should match the node type; avoid reusing the landing preview for unrelated nodes.
 - Prefer one panel per node type so the flow screen is predictable and easy to use.
+- **SMS and email messages:** Message content (templates) should be set in the flow when clicking the SMS or email node, not in settings. Configure copy, delay, and toggles in the node-specific panels rather than in a separate settings page.
 
 ---
 
 ## 7. EasyTable configuration
 
 - [ ] Verify on EasyTable that the configuration works (connection, API key, order/booking sync)
+
+---
+
+## 8. Make Dully integration correct
+
+**Overview:** Fix and complete the Dully integration so orders/bookings from Dully correctly trigger the review flow. Include setup (e.g. connection, credentials) and expose a webhook URL for Dully to call when orders complete.
+
+- [ ] Complete Dully integration setup (connection, credentials, configuration in dashboard)
+- [ ] Implement or fix webhook endpoint for Dully order/booking events
+- [ ] Expose and document a stable webhook URL for Dully to use
+- [ ] Verify end-to-end: Dully sends event → webhook received → review flow triggered
+
+---
+
+## 9. Integrate into Easyrate.app current platform
+
+- [ ] Integrate EasyRate into the current Easyrate.app platform
 
 ---
 

@@ -10,9 +10,10 @@ interface ReviewListProps {
   page: number;
   pageSize: number;
   onPageChange: (page: number) => void;
+  onRefetch?: () => void;
 }
 
-export function ReviewList({ reviews, total, page, pageSize, onPageChange }: ReviewListProps) {
+export function ReviewList({ reviews, total, page, pageSize, onPageChange, onRefetch }: ReviewListProps) {
   const totalPages = Math.ceil(total / pageSize);
   const hasMore = page < totalPages;
   const hasPrevious = page > 1;
@@ -34,7 +35,7 @@ export function ReviewList({ reviews, total, page, pageSize, onPageChange }: Rev
   return (
     <div className="space-y-4">
       {reviews.map((review) => (
-        <ReviewCard key={review.id} review={review} />
+        <ReviewCard key={review.id} review={review} onReplySuccess={onRefetch} />
       ))}
 
       {/* Pagination */}

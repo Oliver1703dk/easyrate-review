@@ -123,4 +123,27 @@ router.delete(
   }
 );
 
+// Reply text validation schema
+const replyBodySchema = z.object({
+  text: z.string().min(1, 'Tekst er påkrævet').max(2000, 'Tekst må maks være 2000 tegn'),
+});
+
+// POST /api/v1/reviews/:id/reply - Reply to a review
+router.post(
+  '/:id/reply',
+  authenticateJwt,
+  validateParams(idParamSchema),
+  validateBody(replyBodySchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params.id as string;
+      const { text } = req.body as z.infer<typeof replyBodySchema>;
+      const review = await reviewService.replyToReview(req.businessId!, id, text);
+      sendSuccess(res, { review });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export default router;

@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import mongoose from 'mongoose';
 import { ReviewService } from '../../src/services/ReviewService.js';
 import { Business } from '../../src/models/Business.js';
+import * as providerFactory from '../../src/providers/ProviderFactory.js';
 
 describe('ReviewService', () => {
   let reviewService: ReviewService;
@@ -336,6 +337,123 @@ describe('ReviewService', () => {
       // Verify review still exists
       const found = await reviewService.findById(testBusinessId, review.id);
       expect(found).toBeDefined();
+    });
+  });
+
+  describe('replyToReview', () => {
+    const mockEmailProvider = {
+      send: vi.fn(),
+      getStatus: vi.fn(),
+    };
+
+    beforeEach(() => {
+      vi.spyOn(providerFactory, 'isEmailConfigured').mockReturnValue(true);
+      vi.spyOn(providerFactory, 'getEmailProvider').mockReturnValue(mockEmailProvider as unknown as ReturnType<typeof providerFactory.getEmailProvider>);
+      mockEmailProvider.send.mockResolvedValue({ success: true, messageId: 'test-message-id' });
+    });
+
+    it('should reply to review with customer email', async () => {
+      const review = await reviewService.create(testBusinessId, {
+        rating: 3,
+        feedbackText: 'Maden var kold',
+        customer: {
+          name: 'Anders',
+          email: 'anders@example.com',
+        },
+        sourcePlatform: 'direct',
+      });
+
+      const updated = await reviewService.replyToReview(
+        testBusinessId,
+        review.id,
+        'Tak for din feedback. Vi beklager oplevelsen.'
+      );
+
+      expect(updated.response).toBeDefined();
+      expect(updated.response?.text).toBe('Tak for din feedback. Vi beklager oplevelsen.');
+      expect(updated.response?.sentVia).toBe('email');
+      expect(updated.response?.status).toBe('sent');
+      expect(updated.response?.messageId).toBe('test-message-id');
+      expect(mockEmailProvider.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'anders@example.com',
+        })
+      );
+    });
+
+    it('should throw error if customer has no email', async () => {
+      const review = await reviewService.create(testBusinessId, {
+        rating: 3,
+        customer: {
+          name: 'Anders',
+          phone: '+4512345678',
+        },
+        sourcePlatform: 'direct',
+      });
+
+      await expect(
+        reviewService.replyToReview(testBusinessId, review.id, 'Svar tekst')
+      ).rejects.toThrow('Kunden har ingen email');
+    });
+
+    it('should throw error if review already has response', async () => {
+      const review = await reviewService.create(testBusinessId, {
+        rating: 3,
+        customer: {
+          email: 'test@example.com',
+        },
+        sourcePlatform: 'direct',
+      });
+
+      // First reply
+      await reviewService.replyToReview(testBusinessId, review.id, 'Første svar');
+
+      // Second reply should fail
+      await expect(
+        reviewService.replyToReview(testBusinessId, review.id, 'Andet svar')
+      ).rejects.toThrow('Anmeldelsen er allerede besvaret');
+    });
+
+    it('should throw error if review not found', async () => {
+      await expect(
+        reviewService.replyToReview(
+          testBusinessId,
+          new mongoose.Types.ObjectId().toString(),
+          'Svar tekst'
+        )
+      ).rejects.toThrow('Anmeldelse ikke fundet');
+    });
+
+    it('should throw error if email send fails', async () => {
+      mockEmailProvider.send.mockResolvedValue({ success: false, error: 'Send failed' });
+
+      const review = await reviewService.create(testBusinessId, {
+        rating: 3,
+        customer: {
+          email: 'test@example.com',
+        },
+        sourcePlatform: 'direct',
+      });
+
+      await expect(
+        reviewService.replyToReview(testBusinessId, review.id, 'Svar tekst')
+      ).rejects.toThrow('Kunne ikke sende email');
+    });
+
+    it('should throw error if email provider not configured', async () => {
+      vi.spyOn(providerFactory, 'isEmailConfigured').mockReturnValue(false);
+
+      const review = await reviewService.create(testBusinessId, {
+        rating: 3,
+        customer: {
+          email: 'test@example.com',
+        },
+        sourcePlatform: 'direct',
+      });
+
+      await expect(
+        reviewService.replyToReview(testBusinessId, review.id, 'Svar tekst')
+      ).rejects.toThrow('Email provider er ikke konfigureret');
     });
   });
 });

@@ -11,7 +11,7 @@ export function ReviewsPage() {
   const [rating, setRating] = useState<ReviewRating | undefined>();
   const [source, setSource] = useState<string | undefined>();
 
-  const { reviews, total, page, pageSize, isLoading, setPage, setFilters } = useReviews();
+  const { reviews, total, page, pageSize, isLoading, setPage, setFilters, refetch } = useReviews();
 
   const handleSearchChange = useCallback(
     (value: string) => {
@@ -66,6 +66,7 @@ export function ReviewsPage() {
             page={page}
             pageSize={pageSize}
             onPageChange={setPage}
+            onRefetch={refetch}
           />
         )}
       </div>

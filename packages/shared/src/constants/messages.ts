@@ -21,6 +21,21 @@ Det tager kun et minut, og din feedback hjælper os med at blive bedre.
 Med venlig hilsen,
 {{businessName}}`,
   },
+  reviewResponse: {
+    subject: `Svar fra {{businessName}}`,
+    body: `Hej {{customerName}},
+
+Tak for din feedback. Her er vores svar:
+
+---
+{{responseText}}
+---
+
+Vi sætter stor pris på at du tog dig tid til at dele din oplevelse med os.
+
+Med venlig hilsen,
+{{businessName}}`,
+  },
 } as const;
 
 export const LANDING_PAGE_TEXT = {
@@ -243,6 +258,13 @@ export const DASHBOARD_TEXT = {
     from: 'Fra',
     externalReview: 'Ekstern anmeldelse',
     internalFeedback: 'Intern feedback',
+    reply: 'Svar',
+    sendReply: 'Send svar',
+    replyPlaceholder: 'Skriv dit svar til kunden...',
+    replied: 'Besvaret',
+    noEmailWarning: 'Kunden har ingen email - svar ikke muligt',
+    replyFailed: 'Kunne ikke sende svar. Prøv igen.',
+    replySent: 'Svar sendt',
   },
   integrations: {
     title: 'Integrationer',

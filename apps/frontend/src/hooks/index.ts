@@ -4,6 +4,7 @@ export { useBranding } from './useBranding';
 export { useReviewStats } from './useReviewStats';
 export { useNotificationStats } from './useNotificationStats';
 export { useReviews } from './useReviews';
+export { useReviewReply } from './useReviewReply';
 export { useIntegrations } from './useIntegrations';
 export { useBusinessSettings } from './useBusinessSettings';
 export { useFlowSettings } from './useFlowSettings';

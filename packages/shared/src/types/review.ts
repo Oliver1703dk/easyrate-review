@@ -2,6 +2,17 @@ import type { ConsentRecord } from './gdpr.js';
 
 export type ReviewRating = 1 | 2 | 3 | 4 | 5;
 
+export type ReviewResponseStatus = 'sent' | 'delivered' | 'failed' | 'bounced';
+
+export interface ReviewResponse {
+  text: string;
+  sentAt: Date;
+  sentVia: 'email';
+  messageId?: string;
+  status: ReviewResponseStatus;
+  createdAt: Date;
+}
+
 export interface ReviewCustomer {
   name?: string;
   email?: string;
@@ -23,6 +34,7 @@ export interface Review {
   locationId?: string; // Reserved for future multi-location support
   metadata?: Record<string, unknown>; // Reserved for extensibility
   tags?: string[]; // Reserved for categorization
+  response?: ReviewResponse;
   createdAt: Date;
   updatedAt: Date;
 }
