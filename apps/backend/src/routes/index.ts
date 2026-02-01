@@ -7,6 +7,7 @@ import publicRouter from './public.js';
 import webhooksRouter from './webhooks/index.js';
 import uploadsRouter from './uploads.js';
 import gdprRouter from './gdpr.js';
+import testRouter from './test.js';
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use('/r', publicRouter);
 router.use('/webhooks', webhooksRouter);
 router.use('/uploads', uploadsRouter);
 router.use('/gdpr', gdprRouter);
+router.use('/test', testRouter);
 
 export default router;

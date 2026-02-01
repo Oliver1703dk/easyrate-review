@@ -3,6 +3,7 @@ import type {
   CreateNotificationInput,
   Notification as NotificationType,
   NotificationStatus,
+  NotificationStats,
 } from '@easyrate/shared';
 import { Notification, NotificationDocument } from '../models/Notification.js';
 import { NotFoundError } from '../utils/errors.js';
@@ -19,17 +20,7 @@ export interface NotificationFilters {
   toDate?: string;
 }
 
-export interface NotificationStats {
-  totalCount: number;
-  sentCount: number;
-  deliveredCount: number;
-  failedCount: number;
-  openedCount: number;
-  clickedCount: number;
-  deliveryRate: number;
-  openRate: number;
-  clickRate: number;
-}
+export { NotificationStats };
 
 export interface PaginatedNotifications {
   data: NotificationType[];
@@ -169,68 +160,87 @@ export class NotificationService {
     return toNotificationType(notification);
   }
 
-  async getStats(businessId: string): Promise<NotificationStats> {
-    const [aggregation] = await Notification.aggregate([
-      { $match: { businessId: new mongoose.Types.ObjectId(businessId) } },
+  async getStats(businessId: string, dateRange?: { from: Date; to: Date }): Promise<NotificationStats> {
+    const businessObjectId = new mongoose.Types.ObjectId(businessId);
+
+    // Build date match condition
+    const dateMatch: Record<string, unknown> = dateRange
+      ? { createdAt: { $gte: dateRange.from, $lte: dateRange.to } }
+      : {};
+
+    // Aggregate by channel type
+    const aggregation = await Notification.aggregate([
+      { $match: { businessId: businessObjectId, ...dateMatch } },
       {
         $group: {
-          _id: null,
-          totalCount: { $sum: 1 },
-          sentCount: {
+          _id: '$type',
+          sent: {
             $sum: {
               $cond: [{ $in: ['$status', ['sent', 'delivered', 'opened', 'clicked']] }, 1, 0],
             },
           },
-          deliveredCount: {
+          delivered: {
             $sum: {
               $cond: [{ $in: ['$status', ['delivered', 'opened', 'clicked']] }, 1, 0],
             },
           },
-          failedCount: {
-            $sum: {
-              $cond: [{ $in: ['$status', ['failed', 'bounced']] }, 1, 0],
-            },
-          },
-          openedCount: {
+          opened: {
             $sum: {
               $cond: [{ $in: ['$status', ['opened', 'clicked']] }, 1, 0],
             },
           },
-          clickedCount: {
+          clicked: {
             $sum: { $cond: [{ $eq: ['$status', 'clicked'] }, 1, 0] },
           },
         },
       },
     ]);
 
-    if (!aggregation) {
-      return {
-        totalCount: 0,
-        sentCount: 0,
-        deliveredCount: 0,
-        failedCount: 0,
-        openedCount: 0,
-        clickedCount: 0,
-        deliveryRate: 0,
-        openRate: 0,
-        clickRate: 0,
-      };
+    // Initialize default stats
+    const stats: NotificationStats = {
+      smsSent: 0,
+      emailSent: 0,
+      smsDelivered: 0,
+      emailDelivered: 0,
+      smsOpened: 0,
+      emailOpened: 0,
+      smsClicked: 0,
+      emailClicked: 0,
+    };
+
+    // Map aggregation results to stats
+    for (const item of aggregation) {
+      if (item._id === 'sms') {
+        stats.smsSent = item.sent;
+        stats.smsDelivered = item.delivered;
+        stats.smsOpened = item.opened;
+        stats.smsClicked = item.clicked;
+      } else if (item._id === 'email') {
+        stats.emailSent = item.sent;
+        stats.emailDelivered = item.delivered;
+        stats.emailOpened = item.opened;
+        stats.emailClicked = item.clicked;
+      }
     }
 
-    const { totalCount, sentCount, deliveredCount, failedCount, openedCount, clickedCount } =
-      aggregation;
+    return stats;
+  }
 
-    return {
-      totalCount,
-      sentCount,
-      deliveredCount,
-      failedCount,
-      openedCount,
-      clickedCount,
-      deliveryRate: sentCount > 0 ? Math.round((deliveredCount / sentCount) * 100) : 0,
-      openRate: deliveredCount > 0 ? Math.round((openedCount / deliveredCount) * 100) : 0,
-      clickRate: openedCount > 0 ? Math.round((clickedCount / openedCount) * 100) : 0,
-    };
+  async updateContent(
+    id: string,
+    data: { content: string; reviewLink: string }
+  ): Promise<NotificationType> {
+    const notification = await Notification.findByIdAndUpdate(
+      id,
+      { content: data.content, reviewLink: data.reviewLink },
+      { new: true }
+    );
+
+    if (!notification) {
+      throw new NotFoundError('Notifikation ikke fundet');
+    }
+
+    return toNotificationType(notification);
   }
 }
 

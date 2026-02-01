@@ -1,4 +1,5 @@
 import type { ReviewRating } from './review.js';
+import type { ReviewTokenCustomer } from './reviewToken.js';
 
 /**
  * Business data returned for landing page display
@@ -71,6 +72,7 @@ export type ReviewFlowAction =
  */
 export interface LandingPageResponse {
   business: LandingPageBusiness;
+  customer?: ReviewTokenCustomer;
 }
 
 /**

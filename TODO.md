@@ -1,0 +1,167 @@
+# EasyRate TODO
+
+## 1. Review Reply/Answer Functionality
+
+**Overview:** Enable businesses to read and reply to internal customer reviews directly from the admin dashboard. This includes storing response data, sending email replies to customers, and displaying the conversation history. All responses require manual approval before sending to ensure quality and compliance.
+
+### Backend
+- [ ] Add `response` field to Review model (text, sentAt, sentVia)
+- [ ] Create `POST /api/v1/reviews/:id/reply` endpoint
+- [ ] Implement email sending service for review responses
+- [ ] Add email templates for review responses (Danish)
+
+### Frontend
+- [ ] Add reply UI to ReviewCard component (button, textarea, send button)
+- [ ] Create reply API hook
+- [ ] Display existing responses on review cards
+- [ ] Add loading/error states for reply functionality
+
+---
+
+## 2. Fix Analytics Dashboard
+
+**Overview:** Fix the analytics dashboard so it shows the correct values. The overview page does not display review and notification stats correctly because the frontend receives the wrong response shape and field names from the API. Also fix notification opening/click tracking for SMS and email so opened/clicked stats are accurate.
+
+**Metric definitions (all filtered by selected time interval):**
+- **Totale anmeldelser:** Combined count of internal platform reviews + Google reviews (the only trackable sources)
+- **Gns. rating:** Average score across both Google and internal reviews
+- **Kunder anmodet:** Number of customers we sent SMS and email to
+- **Svarrate:** Percentage of requests that resulted in a review (reviews / requests)
+- **SMS sendt:** Count of SMS messages sent to customers
+- **Email sendt:** Count of emails sent to customers (separate from SMS since some phone numbers or emails may fail or be missing)
+- **Green/red trend numbers:** Growth or decline compared to previous period (e.g. if "last 30 days" is selected, compare to the 30 days before that; same logic for weekly or monthly views)
+
+**Notification opening tracking (JWT + notificationId approach):**
+- [ ] Update the Notification model with click tracking fields
+- [ ] Add notificationId to JWT generation in processOrderQueue
+- [ ] Call a tracking method in the GET endpoint of public.ts when the landing page is loaded
+- [ ] Add/align stats (opened, clicked by channel) to the dashboard API and overview
+
+---
+
+## 3. AI Insights (from ai_features_mvp.md)
+
+**Overview:** Implement AI-powered sentiment analysis and theme extraction from customer reviews. The system analyzes reviews from the last 30 days, generates overall sentiment scores, and identifies key areas/themes customers mention. Recurring themes are aggregated so each theme shows how many customers mentioned it and how many times; each theme is classified by severity (critical / high / medium / low). Insights regenerate on a weekly basis; users can also trigger a manual regenerate at any time. All analyses are stored so that in the future progress and trends from previous AI insights can be implemented (e.g. comparison over time). This gives businesses a clear view of what matters most to customers and how often it comes up.
+
+### Backend
+- [ ] Create AI provider abstraction interface (`AIProvider`)
+- [ ] Implement Grok API provider (with OpenAI fallback)
+- [ ] Create `GET /api/v1/insights` endpoint (returns current/cached insights)
+- [ ] Create `POST /api/v1/insights/refresh` endpoint (regenerates insights on demand)
+- [ ] Add weekly regeneration of AI insights (scheduled job)
+- [ ] Persist insight runs (store analyses) so future “progress from previous insights” / trend comparison is possible
+- [ ] Add `ai_settings` to Business model
+- [ ] Implement batch review analysis (last 30 days)
+- [ ] Create InsightsResult data model
+- [ ] Detect key areas/themes customers mention; aggregate recurring themes
+- [ ] For each theme: store count of customers who mentioned it and number of mentions
+- [ ] Classify theme severity: critical / high / medium / low
+
+### Frontend
+- [ ] Add "Indsigter" section to OverviewPage
+- [ ] Display sentiment score and themes (with customer count and mention count per theme)
+- [ ] Show severity (critical / high / medium / low) per theme
+- [ ] Add "Regenerate" button so user can trigger manual refresh
+- [ ] Show review count and date range
+- [ ] Add loading states for insights generation
+
+---
+
+## 4. AI Response Generation (from ai_features_mvp.md)
+
+**Overview:** Automatically generate draft responses to customer reviews using AI. The system generates context-aware, tone-appropriate responses in Danish that businesses can edit before sending. Different prompts are used for negative (1-3 stars) vs positive (4-5 stars) reviews. All AI-generated responses require human approval before sending to customers via email.
+
+### Backend
+- [ ] Create `POST /api/v1/reviews/:id/generate-response` endpoint
+- [ ] Implement response generation prompts (negative/positive reviews)
+- [ ] Add ReviewResponse data model
+- [ ] Create `POST /api/v1/reviews/:id/send-response` endpoint
+- [ ] Integrate with email service to send responses
+- [ ] Add rate limiting (50 generations/day per business)
+
+### Frontend
+- [ ] Add "Generer svar" button to ReviewCard
+- [ ] Create response generation UI (textarea, edit, send)
+- [ ] Add loading states during AI generation
+- [ ] Display sent responses on review cards
+- [ ] Add error handling for AI failures
+
+---
+
+## 5. Google Reviews Integration (from system_overview_full.md)
+
+**Overview:** Integrate with Google Business Profile API to fetch, display, and reply to Google reviews directly in the admin dashboard. This includes syncing external reviews, matching them to internal review flows through attribution, and enabling businesses to reply to Google reviews with AI-generated drafts. Reviews from Google will be displayed alongside internal reviews with filtering capabilities.
+
+### Backend
+- [ ] Integrate Google Business Profile API for fetching reviews
+- [ ] Create sync service for polling Google reviews (default: every 2 hours)
+- [ ] Add manual refresh endpoint for Google reviews
+- [ ] Implement review attribution (match external reviews to internal flow by customer name + timestamp)
+- [ ] Create `POST /api/v1/reviews/:id/reply-google` endpoint for posting replies to Google
+- [ ] Add Google Business Profile configuration to Business model (location IDs, API credentials)
+- [ ] Store external reviews in database with source platform identifier
+- [ ] Support real-time webhooks via Google My Business Notifications API (optional)
+
+### Frontend
+- [ ] Display Google reviews in ReviewsPage alongside internal reviews
+- [ ] Add filter for review source (internal vs. Google vs. Trustpilot)
+- [ ] Show Google review details (stars, text, date, reviewer name)
+- [ ] Add reply UI for Google reviews (AI-generated drafts, editable, send to Google)
+- [ ] Add manual refresh button for syncing Google reviews
+- [ ] Display review attribution matches (confidence threshold)
+- [ ] Add Google Business Profile settings in SettingsPage (API configuration, location IDs)
+
+---
+
+## 6. Fix Flow Screen
+
+**Overview:** Ensure the flow page sidebar shows the correct configuration or preview screen when each flow node is clicked. Currently only the landing node shows a dedicated panel; trigger, SMS, email, branch, internal feedback, external review, and thank-you nodes do not show node-specific content. Each node type should display the appropriate settings, copy, or preview so users can understand and configure that step of the flow. Only nodes that has configuration should show configuration. 
+
+### Frontend
+- [ ] Show correct sidebar panel when trigger node is selected (e.g. trigger description, integration source)
+- [ ] Show SMS-specific panel when SMS node is selected (template, delay, toggle state)
+- [ ] Show email-specific panel when email node is selected (template, delay, toggle state)
+- [ ] Keep/refine landing panel when landing node is selected (rating type, headline, conditions)
+- [ ] Show branch-specific panel when branch node is selected (1–3 vs 4–5 star split, conditions)
+- [ ] Show internal-feedback panel when internal node is selected (private form preview, copy)
+- [ ] Show external-review panel when external node is selected (Google/share options, copy)
+- [ ] Show thank-you panel when thank-you node is selected (success copy, CTA)
+- [ ] When no node or unknown node is selected, show flow overview or empty state instead of wrong content
+- [ ] Remove or relocate debug UI (e.g. channel toggles) so it does not clutter the flow canvas
+
+### Notes
+- Sidebar layout and content should match the node type; avoid reusing the landing preview for unrelated nodes.
+- Prefer one panel per node type so the flow screen is predictable and easy to use.
+- **SMS and email messages:** Message content (templates) should be set in the flow when clicking the SMS or email node, not in settings. Configure copy, delay, and toggles in the node-specific panels rather than in a separate settings page.
+
+---
+
+## 7. EasyTable configuration
+
+- [ ] Verify on EasyTable that the configuration works (connection, API key, order/booking sync)
+
+---
+
+## 8. Make Dully integration correct
+
+**Overview:** Fix and complete the Dully integration so orders/bookings from Dully correctly trigger the review flow. Include setup (e.g. connection, credentials) and expose a webhook URL for Dully to call when orders complete.
+
+- [ ] Complete Dully integration setup (connection, credentials, configuration in dashboard)
+- [ ] Implement or fix webhook endpoint for Dully order/booking events
+- [ ] Expose and document a stable webhook URL for Dully to use
+- [ ] Verify end-to-end: Dully sends event → webhook received → review flow triggered
+
+---
+
+## 9. Integrate into Easyrate.app current platform
+
+- [ ] Integrate EasyRate into the current Easyrate.app platform
+
+---
+
+## Notes
+
+- All AI features require human approval before sending
+- Danish language optimization required for all AI prompts
+- Rate limiting and cost control measures needed
+- GDPR compliance: ensure customer consent for email responses

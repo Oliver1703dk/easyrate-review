@@ -21,6 +21,21 @@ Det tager kun et minut, og din feedback hjælper os med at blive bedre.
 Med venlig hilsen,
 {{businessName}}`,
   },
+  reviewResponse: {
+    subject: `Svar fra {{businessName}}`,
+    body: `Hej {{customerName}},
+
+Tak for din feedback. Her er vores svar:
+
+---
+{{responseText}}
+---
+
+Vi sætter stor pris på at du tog dig tid til at dele din oplevelse med os.
+
+Med venlig hilsen,
+{{businessName}}`,
+  },
 } as const;
 
 export const LANDING_PAGE_TEXT = {
@@ -136,8 +151,69 @@ export const DASHBOARD_TEXT = {
     overview: 'Oversigt',
     reviews: 'Anmeldelser',
     integrations: 'Integrationer',
+    flow: 'Flow',
+    test: 'Test',
     settings: 'Indstillinger',
     logout: 'Log ud',
+  },
+  test: {
+    title: 'Test Anmeldelsesflow',
+    subtitle: 'Test hvordan dine kunder oplever anmeldelsesflowet',
+    linkCardTitle: 'Test Link',
+    linkCardDescription: 'Brug dette link til at teste anmeldelsesflowet som en kunde ville opleve det.',
+    openLandingPage: 'Åbn Landing Page',
+    copyLink: 'Kopier Link',
+    linkCopied: 'Link kopieret!',
+    testBadge: 'Test',
+    instructionsTitle: 'Sådan tester du',
+    instruction1: 'Klik på "Åbn Landing Page" for at åbne anmeldelsessiden',
+    instruction2: 'Vælg en stjernebedømmelse (1-5 stjerner)',
+    instruction3: 'Følg flowet baseret på din bedømmelse',
+    instruction4: 'Se din test-anmeldelse i "Anmeldelser" med et Test badge',
+  },
+  flow: {
+    title: 'Flow / Automatisering',
+    subtitle: 'Visualiser din anmeldelsesflow',
+    nodes: {
+      order_complete: 'Ordre fuldført',
+      order_complete_desc: 'Trigger fra integration',
+      send_sms: 'Send SMS',
+      send_sms_desc: 'Besked til kunde',
+      send_email: 'Send Email',
+      send_email_desc: 'Email til kunde',
+      landing_page: 'Landing Page',
+      landing_page_desc: '1-5 stjerne bedømmelse',
+      rating_branch: 'Bedømmelse',
+      rating_branch_desc: 'Routing baseret på stjerner',
+      internal_feedback: 'Intern Feedback',
+      internal_feedback_desc: 'Privat feedback formular',
+      external_review: 'Ekstern Anmeldelse',
+      external_review_desc: 'Google Review prompt',
+      thank_you: 'Tak Side',
+      thank_you_desc: 'Afslutning af flow',
+    },
+    sidebar: {
+      title: 'Flow Oversigt',
+      channelsActive: 'Aktive kanaler',
+      nodeConfig: 'Node Konfiguration',
+      landingPreview: 'Landing Page Preview',
+      ratingType: 'Bedømmelsestype',
+      headline: 'Overskrift',
+      subheadline: 'Undertitel',
+      condition1: 'Betingelse 1',
+      condition2: 'Betingelse 2',
+    },
+    validation: {
+      atLeastOneRequired: 'Mindst én kanal skal være aktiv',
+    },
+    branches: {
+      negative: '1-3 stjerner',
+      positive: '4-5 stjerner',
+    },
+    status: {
+      active: 'Aktiv',
+      inactive: 'Inaktiv',
+    },
   },
   overview: {
     title: 'Anmeldelsessystem / Analytics',
@@ -182,6 +258,13 @@ export const DASHBOARD_TEXT = {
     from: 'Fra',
     externalReview: 'Ekstern anmeldelse',
     internalFeedback: 'Intern feedback',
+    reply: 'Svar',
+    sendReply: 'Send svar',
+    replyPlaceholder: 'Skriv dit svar til kunden...',
+    replied: 'Besvaret',
+    noEmailWarning: 'Kunden har ingen email - svar ikke muligt',
+    replyFailed: 'Kunne ikke sende svar. Prøv igen.',
+    replySent: 'Svar sendt',
   },
   integrations: {
     title: 'Integrationer',

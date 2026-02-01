@@ -48,13 +48,24 @@ router.get(
   }
 );
 
+// Stats query schema with optional date range
+const statsQuerySchema = z.object({
+  fromDate: z.string().optional(),
+  toDate: z.string().optional(),
+});
+
 // GET /api/v1/notifications/stats - Get notification statistics
 router.get(
   '/stats',
+  validateQuery(statsQuerySchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const stats = await notificationService.getStats(req.businessId!);
-      sendSuccess(res, { stats });
+      const { fromDate, toDate } = req.query as z.infer<typeof statsQuerySchema>;
+      const dateRange = fromDate && toDate
+        ? { from: new Date(fromDate), to: new Date(toDate) }
+        : undefined;
+      const stats = await notificationService.getStats(req.businessId!, dateRange);
+      sendSuccess(res, stats);
     } catch (error) {
       next(error);
     }

@@ -1,7 +1,7 @@
-import crypto from 'crypto';
 import { Business, type BusinessDocument } from '../models/Business.js';
 import { orderQueueService, type QueuedOrder } from '../services/OrderQueueService.js';
 import { notificationService } from '../services/NotificationService.js';
+import { reviewTokenService } from '../services/ReviewTokenService.js';
 
 interface ProcessorConfig {
   intervalMs: number;
@@ -125,27 +125,53 @@ class OrderQueueProcessor {
         return;
       }
 
-      // Generate review link with unique token
-      const reviewToken = crypto.randomBytes(16).toString('hex');
-      const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-      const reviewLink = `${baseUrl}/r/${businessId}?token=${reviewToken}&order=${orderData.orderId}`;
+      // Build customer object only with defined values
+      const customer: { email?: string; phone?: string; name?: string } = {};
+      if (orderData.customerEmail) {
+        customer.email = orderData.customerEmail;
+      }
+      if (orderData.customerPhone) {
+        customer.phone = orderData.customerPhone;
+      }
+      if (orderData.customerName) {
+        customer.name = orderData.customerName;
+      }
 
-      // Get message content
+      // Get message templates
       const smsTemplate = business.messageTemplates.sms ||
         `Tak for dit besøg hos ${business.name}! Del venligst din oplevelse: {link}`;
       const emailTemplate = business.messageTemplates.email ||
         `Tak for dit besøg hos ${business.name}! Vi vil meget gerne høre om din oplevelse.`;
 
-      // Create SMS notification if enabled
-      if (shouldSendSms && orderData.customerPhone) {
-        const smsContent = smsTemplate.replace('{link}', reviewLink);
+      const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
-        await notificationService.create(businessId, {
+      // Create SMS notification if enabled
+      // Flow: 1) Create notification without content, 2) Generate token with notificationId, 3) Update notification with content
+      if (shouldSendSms && orderData.customerPhone) {
+        // Step 1: Create notification without final content (placeholder)
+        const smsNotification = await notificationService.create(businessId, {
           type: 'sms',
           recipient: orderData.customerPhone,
-          content: smsContent,
-          reviewLink,
+          content: '', // Will be updated after token generation
+          reviewLink: '', // Will be updated after token generation
           orderId: orderData.orderId,
+        });
+
+        // Step 2: Generate JWT with notificationId for click tracking
+        const smsToken = reviewTokenService.generateToken({
+          businessId,
+          ...(Object.keys(customer).length > 0 && { customer }),
+          orderId: orderData.orderId,
+          sourcePlatform: orderData.platform,
+          notificationId: smsNotification.id,
+        });
+        const smsReviewLink = `${baseUrl}/r/${smsToken}`;
+        const smsContent = smsTemplate.replace('{link}', smsReviewLink);
+
+        // Step 3: Update notification with actual content and link
+        await notificationService.updateContent(smsNotification.id, {
+          content: smsContent,
+          reviewLink: smsReviewLink,
         });
 
         console.log(
@@ -155,16 +181,31 @@ class OrderQueueProcessor {
 
       // Create email notification if enabled
       if (shouldSendEmail && orderData.customerEmail) {
-        const emailSubject = `Hvordan var din oplevelse hos ${business.name}?`;
-        const emailContent = emailTemplate.replace('{link}', reviewLink);
-
-        await notificationService.create(businessId, {
+        // Step 1: Create notification without final content (placeholder)
+        const emailNotification = await notificationService.create(businessId, {
           type: 'email',
           recipient: orderData.customerEmail,
-          subject: emailSubject,
-          content: emailContent,
-          reviewLink,
+          subject: `Hvordan var din oplevelse hos ${business.name}?`,
+          content: '', // Will be updated after token generation
+          reviewLink: '', // Will be updated after token generation
           orderId: orderData.orderId,
+        });
+
+        // Step 2: Generate JWT with notificationId for click tracking
+        const emailToken = reviewTokenService.generateToken({
+          businessId,
+          ...(Object.keys(customer).length > 0 && { customer }),
+          orderId: orderData.orderId,
+          sourcePlatform: orderData.platform,
+          notificationId: emailNotification.id,
+        });
+        const emailReviewLink = `${baseUrl}/r/${emailToken}`;
+        const emailContent = emailTemplate.replace('{link}', emailReviewLink);
+
+        // Step 3: Update notification with actual content and link
+        await notificationService.updateContent(emailNotification.id, {
+          content: emailContent,
+          reviewLink: emailReviewLink,
         });
 
         console.log(

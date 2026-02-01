@@ -56,14 +56,25 @@ router.get(
   }
 );
 
+// Stats query schema with optional date range
+const statsQuerySchema = z.object({
+  fromDate: z.string().optional(),
+  toDate: z.string().optional(),
+});
+
 // GET /api/v1/reviews/stats - Get review statistics
 router.get(
   '/stats',
   authenticateJwt,
+  validateQuery(statsQuerySchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const stats = await reviewService.getStats(req.businessId!);
-      sendSuccess(res, { stats });
+      const { fromDate, toDate } = req.query as z.infer<typeof statsQuerySchema>;
+      const dateRange = fromDate && toDate
+        ? { from: new Date(fromDate), to: new Date(toDate) }
+        : undefined;
+      const stats = await reviewService.getStats(req.businessId!, dateRange);
+      sendSuccess(res, stats);
     } catch (error) {
       next(error);
     }
@@ -117,6 +128,29 @@ router.delete(
       const id = req.params.id as string;
       await reviewService.delete(req.businessId!, id);
       sendSuccess(res, { message: 'Anmeldelse slettet' });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Reply text validation schema
+const replyBodySchema = z.object({
+  text: z.string().min(1, 'Tekst er påkrævet').max(2000, 'Tekst må maks være 2000 tegn'),
+});
+
+// POST /api/v1/reviews/:id/reply - Reply to a review
+router.post(
+  '/:id/reply',
+  authenticateJwt,
+  validateParams(idParamSchema),
+  validateBody(replyBodySchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params.id as string;
+      const { text } = req.body as z.infer<typeof replyBodySchema>;
+      const review = await reviewService.replyToReview(req.businessId!, id, text);
+      sendSuccess(res, { review });
     } catch (error) {
       next(error);
     }

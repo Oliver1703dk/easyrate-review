@@ -66,14 +66,13 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      const data: unknown = await response.json();
+      const json = await response.json() as { success: boolean; data?: T; error?: ApiError };
 
       if (!response.ok) {
-        const error = data as { error?: ApiError };
-        throw new Error(error.error?.message ?? ERROR_MESSAGES.generic);
+        throw new Error(json.error?.message ?? ERROR_MESSAGES.generic);
       }
 
-      return data as T;
+      return json.data as T;
     } catch (error) {
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
         throw new Error(ERROR_MESSAGES.networkError);
@@ -88,8 +87,9 @@ class ApiClient {
     return this.request<LandingPageResponse>(`/r/${token}`);
   }
 
-  async submitReview(token: string, data: SubmitReviewRequest): Promise<SubmitReviewResponse> {
-    return this.request<SubmitReviewResponse>(`/r/${token}`, {
+  async submitReview(token: string, data: SubmitReviewRequest, isTest?: boolean): Promise<SubmitReviewResponse> {
+    const queryParams = isTest ? '?isTest=true' : '';
+    return this.request<SubmitReviewResponse>(`/r/${token}${queryParams}`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -239,6 +239,14 @@ class ApiClient {
   async deleteAccount(): Promise<GdprDeletionResponse> {
     return this.request<GdprDeletionResponse>('/gdpr/account', {
       method: 'DELETE',
+    });
+  }
+
+  // ============ Test ============
+
+  async getTestReviewLink(): Promise<{ link: string }> {
+    return this.request<{ link: string }>('/test/review-link', {
+      method: 'POST',
     });
   }
 }

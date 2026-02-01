@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ERROR_MESSAGES } from '@easyrate/shared';
-import type { LandingPageBusiness } from '@easyrate/shared';
+import type { LandingPageBusiness, ReviewTokenCustomer } from '@easyrate/shared';
 import { api } from '../lib/api';
 
 interface UseBusinessDataResult {
   business: LandingPageBusiness | null;
+  customer: ReviewTokenCustomer | null;
   isLoading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -12,6 +13,7 @@ interface UseBusinessDataResult {
 
 export function useBusinessData(token: string | undefined): UseBusinessDataResult {
   const [business, setBusiness] = useState<LandingPageBusiness | null>(null);
+  const [customer, setCustomer] = useState<ReviewTokenCustomer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,6 +30,7 @@ export function useBusinessData(token: string | undefined): UseBusinessDataResul
     try {
       const response = await api.getLandingPageData(token);
       setBusiness(response.business);
+      setCustomer(response.customer ?? null);
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -45,6 +48,7 @@ export function useBusinessData(token: string | undefined): UseBusinessDataResul
 
   return {
     business,
+    customer,
     isLoading,
     error,
     refetch: fetchBusiness,

@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import type { ReviewRating } from '@easyrate/shared';
 import { ERROR_MESSAGES, REVIEW_THRESHOLDS } from '@easyrate/shared';
 import { useReviewFlow, useBusinessData, useBranding } from '../../hooks';
@@ -15,7 +15,9 @@ import { api } from '../../lib/api';
 
 export function ReviewPage() {
   const { token } = useParams<{ token: string }>();
-  const { business, isLoading: isLoadingBusiness, error: businessError } = useBusinessData(token);
+  const [searchParams] = useSearchParams();
+  const isTest = searchParams.get('isTest') === 'true';
+  const { business, customer, isLoading: isLoadingBusiness, error: businessError } = useBusinessData(token);
   const { state, setRating, startSubmit, submitSuccess, submitError, markExternalReview, reset } =
     useReviewFlow();
 
@@ -56,13 +58,17 @@ export function ReviewPage() {
         if (photos.length > 0) {
           submitData.photos = photos;
         }
-        await api.submitReview(token, submitData);
+        // Include customer info from JWT if available
+        if (customer) {
+          submitData.customer = customer;
+        }
+        await api.submitReview(token, submitData, isTest);
         submitSuccess();
       } catch (err) {
         submitError(err instanceof Error ? err.message : ERROR_MESSAGES.reviewSubmitFailed);
       }
     },
-    [token, state.rating, startSubmit, submitSuccess, submitError]
+    [token, state.rating, isTest, customer, startSubmit, submitSuccess, submitError]
   );
 
   // Handle external review click (Google)
@@ -78,7 +84,9 @@ export function ReviewPage() {
         rating: state.rating,
         submittedExternalReview: true,
         consent: { given: true },
-      });
+        // Include customer info from JWT if available
+        ...(customer && { customer }),
+      }, isTest);
     } catch {
       // Silently fail - user is going to external site anyway
     }
@@ -88,7 +96,7 @@ export function ReviewPage() {
 
     // Show thank you screen
     submitSuccess();
-  }, [token, state.rating, business?.googleReviewUrl, markExternalReview, submitSuccess]);
+  }, [token, state.rating, business?.googleReviewUrl, isTest, customer, markExternalReview, submitSuccess]);
 
   // Handle skip external review
   const handleSkipExternalReview = useCallback(async () => {
@@ -101,12 +109,14 @@ export function ReviewPage() {
         rating: state.rating,
         submittedExternalReview: false,
         consent: { given: true },
-      });
+        // Include customer info from JWT if available
+        ...(customer && { customer }),
+      }, isTest);
       submitSuccess();
     } catch (err) {
       submitError(err instanceof Error ? err.message : ERROR_MESSAGES.reviewSubmitFailed);
     }
-  }, [token, state.rating, startSubmit, submitSuccess, submitError]);
+  }, [token, state.rating, isTest, customer, startSubmit, submitSuccess, submitError]);
 
   // Handle retry
   const handleRetry = useCallback(() => {

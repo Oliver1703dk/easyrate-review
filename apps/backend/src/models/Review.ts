@@ -89,6 +89,24 @@ const reviewSchema = new Schema<ReviewDocument>(
       type: [String],
       default: [],
     },
+    response: {
+      type: new Schema(
+        {
+          text: { type: String, required: true, maxlength: 2000 },
+          sentAt: { type: Date, required: true },
+          sentVia: { type: String, enum: ['email'], required: true },
+          messageId: { type: String },
+          status: {
+            type: String,
+            enum: ['sent', 'delivered', 'failed', 'bounced'],
+            required: true,
+          },
+          createdAt: { type: Date, required: true },
+        },
+        { _id: false }
+      ),
+      default: null,
+    },
   },
   {
     timestamps: true,
