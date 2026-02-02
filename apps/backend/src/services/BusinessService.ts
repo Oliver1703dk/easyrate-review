@@ -58,12 +58,26 @@ export class BusinessService {
     if (input.phone !== undefined) business.phone = input.phone;
     if (input.address !== undefined) business.address = input.address;
 
-    // Update settings (merge)
+    // Update settings (deep merge for nested objects like aiSettings)
     if (input.settings) {
-      business.settings = {
-        ...business.settings,
-        ...input.settings,
-      };
+      const currentSettings = JSON.parse(JSON.stringify(business.settings ?? {})) as Record<string, unknown>;
+      const newSettings = { ...currentSettings };
+
+      // Merge top-level settings
+      for (const [key, value] of Object.entries(input.settings)) {
+        if (key === 'aiSettings' && value && typeof value === 'object') {
+          // Deep merge aiSettings
+          newSettings.aiSettings = {
+            ...(currentSettings.aiSettings as Record<string, unknown> | undefined),
+            ...value,
+          };
+        } else if (value !== undefined) {
+          newSettings[key] = value;
+        }
+      }
+
+      business.settings = newSettings as unknown as typeof business.settings;
+      business.markModified('settings');
     }
 
     // Update branding (merge)
@@ -87,10 +101,23 @@ export class BusinessService {
       throw new NotFoundError('Virksomhed ikke fundet');
     }
 
-    business.settings = {
-      ...business.settings,
-      ...settings,
-    };
+    const currentSettings = JSON.parse(JSON.stringify(business.settings ?? {})) as Record<string, unknown>;
+    const newSettings = { ...currentSettings };
+
+    // Merge settings with deep merge for aiSettings
+    for (const [key, value] of Object.entries(settings)) {
+      if (key === 'aiSettings' && value && typeof value === 'object') {
+        newSettings.aiSettings = {
+          ...(currentSettings.aiSettings as Record<string, unknown> | undefined),
+          ...value,
+        };
+      } else if (value !== undefined) {
+        newSettings[key] = value;
+      }
+    }
+
+    business.settings = newSettings as unknown as typeof business.settings;
+    business.markModified('settings');
 
     await business.save();
     return toBusinessType(business);

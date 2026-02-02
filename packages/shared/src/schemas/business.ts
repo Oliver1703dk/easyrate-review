@@ -3,6 +3,13 @@ import { z } from 'zod';
 // Helper for optional URL fields that also accept empty strings
 const optionalUrl = z.union([z.string().url(), z.literal('')]).optional();
 
+// AI Settings schema
+export const aiSettingsSchema = z.object({
+  enabled: z.boolean(),
+  provider: z.enum(['grok', 'openai']),
+  autoRefresh: z.boolean(),
+});
+
 export const businessSettingsSchema = z.object({
   defaultDelayMinutes: z.number().int().min(0).max(1440),
   smsEnabled: z.boolean(),
@@ -13,6 +20,7 @@ export const businessSettingsSchema = z.object({
     .regex(/^#[0-9A-Fa-f]{6}$/)
     .optional(),
   logoUrl: optionalUrl,
+  aiSettings: aiSettingsSchema.partial().optional(),
 });
 
 export const integrationConfigSchema = z.object({

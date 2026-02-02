@@ -30,6 +30,17 @@ const gdprSettingsSchema = new Schema(
   { _id: false }
 );
 
+const aiSettingsSchema = new Schema(
+  {
+    enabled: { type: Boolean, default: false },
+    provider: { type: String, enum: ['grok', 'openai'], default: 'grok' },
+    autoRefresh: { type: Boolean, default: true },
+    lastInsightRunId: { type: Schema.Types.ObjectId, ref: 'InsightRun' },
+    lastInsightRunAt: { type: Date },
+  },
+  { _id: false }
+);
+
 const businessSettingsSchema = new Schema(
   {
     defaultDelayMinutes: { type: Number, default: 60 },
@@ -39,6 +50,7 @@ const businessSettingsSchema = new Schema(
     primaryColor: { type: String, default: '#3B82F6' },
     logoUrl: { type: String },
     gdpr: { type: gdprSettingsSchema, default: () => ({}) },
+    aiSettings: { type: aiSettingsSchema, default: () => ({}) },
   },
   { _id: false }
 );

@@ -10,3 +10,4 @@ export * from './dashboard.js';
 export * from './gdpr.js';
 export * from './flow.js';
 export * from './reviewToken.js';
+export * from './ai.js';

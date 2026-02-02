@@ -25,3 +25,4 @@ export {
 } from './Table.js';
 export { Avatar, AvatarImage, AvatarFallback } from './Avatar.js';
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs.js';
+export { Switch, type SwitchProps } from './Switch.js';

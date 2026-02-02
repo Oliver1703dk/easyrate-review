@@ -5,6 +5,8 @@ export { useReviewStats } from './useReviewStats';
 export { useNotificationStats } from './useNotificationStats';
 export { useReviews } from './useReviews';
 export { useReviewReply } from './useReviewReply';
+export { useGenerateResponse } from './useGenerateResponse';
 export { useIntegrations } from './useIntegrations';
 export { useBusinessSettings } from './useBusinessSettings';
 export { useFlowSettings } from './useFlowSettings';
+export { useInsights } from './useInsights';

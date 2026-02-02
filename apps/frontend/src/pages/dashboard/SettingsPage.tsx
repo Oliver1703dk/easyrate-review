@@ -2,17 +2,20 @@ import { useState, useEffect } from 'react';
 import { Loader2, Check } from 'lucide-react';
 import { Button, Spinner } from '@easyrate/ui';
 import { DASHBOARD_TEXT, SMS_TEMPLATES, EMAIL_TEMPLATES } from '@easyrate/shared';
+import type { AIProviderType } from '@easyrate/shared';
 import { Header } from '../../components/dashboard/layout';
 import {
   ProfileSection,
   MessageTemplatesSection,
   BrandingSection,
   GoogleReviewSection,
+  AIInsightsSection,
 } from '../../components/dashboard/settings';
-import { useBusinessSettings } from '../../hooks';
+import { useBusinessSettings, useInsights } from '../../hooks';
 
 export function SettingsPage() {
   const { business, isLoading, isSaving, updateSettings } = useBusinessSettings();
+  const { status: insightsStatus } = useInsights();
   const [saved, setSaved] = useState(false);
 
   // Form state
@@ -26,6 +29,11 @@ export function SettingsPage() {
   const [logoUrl, setLogoUrl] = useState('');
   const [googleReviewUrl, setGoogleReviewUrl] = useState('');
 
+  // AI settings state
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiAutoRefresh, setAiAutoRefresh] = useState(true);
+  const [aiProvider, setAiProvider] = useState<AIProviderType>('grok');
+
   // Initialize form state from business data
   useEffect(() => {
     if (business) {
@@ -38,6 +46,10 @@ export function SettingsPage() {
       setPrimaryColor(business.branding?.primaryColor || '#000000');
       setLogoUrl(business.branding?.logoUrl || '');
       setGoogleReviewUrl(business.settings?.googleReviewUrl || '');
+      // AI settings
+      setAiEnabled(business.settings?.aiSettings?.enabled || false);
+      setAiAutoRefresh(business.settings?.aiSettings?.autoRefresh ?? true);
+      setAiProvider(business.settings?.aiSettings?.provider || 'grok');
     }
   }, [business]);
 
@@ -58,6 +70,11 @@ export function SettingsPage() {
         },
         settings: {
           googleReviewUrl,
+          aiSettings: {
+            enabled: aiEnabled,
+            autoRefresh: aiAutoRefresh,
+            provider: aiProvider,
+          },
         },
       });
       setSaved(true);
@@ -109,6 +126,16 @@ export function SettingsPage() {
           <GoogleReviewSection
             googleReviewUrl={googleReviewUrl}
             onGoogleReviewUrlChange={setGoogleReviewUrl}
+          />
+
+          <AIInsightsSection
+            enabled={aiEnabled}
+            autoRefresh={aiAutoRefresh}
+            provider={aiProvider}
+            isConfigured={insightsStatus?.configured ?? false}
+            onEnabledChange={setAiEnabled}
+            onAutoRefreshChange={setAiAutoRefresh}
+            onProviderChange={setAiProvider}
           />
 
           {/* Save Button */}

@@ -1,6 +1,7 @@
-import type { SmsProvider, EmailProvider } from '@easyrate/shared';
+import type { SmsProvider, EmailProvider, AIProviderType } from '@easyrate/shared';
 import { GatewayApiProvider, type GatewayApiConfig } from './sms/GatewayApiProvider.js';
 import { SendGridProvider, type SendGridConfig } from './email/SendGridProvider.js';
+import { BaseAIProvider, createGrokProvider, createOpenAIProvider } from './ai/index.js';
 
 /**
  * Singleton factory for creating message providers from environment config
@@ -10,6 +11,7 @@ export class ProviderFactory {
   private static instance: ProviderFactory;
   private smsProvider: SmsProvider | null = null;
   private emailProvider: EmailProvider | null = null;
+  private aiProvider: BaseAIProvider | null = null;
 
   private constructor() {}
 
@@ -59,6 +61,49 @@ export class ProviderFactory {
   }
 
   /**
+   * Get or create the AI provider
+   * Prefers Grok, falls back to OpenAI
+   */
+  getAIProvider(preferredProvider?: AIProviderType): BaseAIProvider {
+    // If a specific provider is requested and different from cached, create new
+    if (preferredProvider && this.aiProvider && this.aiProvider.getName() !== preferredProvider) {
+      this.aiProvider = null;
+    }
+
+    if (!this.aiProvider) {
+      if (preferredProvider === 'openai') {
+        this.aiProvider = createOpenAIProvider();
+      } else if (preferredProvider === 'grok') {
+        this.aiProvider = createGrokProvider();
+      } else {
+        // Default: try Grok first, then OpenAI
+        this.aiProvider = createGrokProvider() || createOpenAIProvider();
+      }
+
+      if (!this.aiProvider) {
+        throw new Error('No AI provider is configured. Set GROK_API_KEY or OPENAI_API_KEY.');
+      }
+    }
+    return this.aiProvider;
+  }
+
+  /**
+   * Check if any AI provider is configured
+   */
+  isAIConfigured(): boolean {
+    return Boolean(process.env.GROK_API_KEY || process.env.OPENAI_API_KEY);
+  }
+
+  /**
+   * Get the name of the configured AI provider
+   */
+  getConfiguredAIProviderName(): AIProviderType | null {
+    if (process.env.GROK_API_KEY) return 'grok';
+    if (process.env.OPENAI_API_KEY) return 'openai';
+    return null;
+  }
+
+  /**
    * Get Gateway API configuration from environment
    */
   private getGatewayApiConfig(): GatewayApiConfig {
@@ -102,6 +147,7 @@ export class ProviderFactory {
   reset(): void {
     this.smsProvider = null;
     this.emailProvider = null;
+    this.aiProvider = null;
   }
 }
 
@@ -120,4 +166,16 @@ export function isSmsConfigured(): boolean {
 
 export function isEmailConfigured(): boolean {
   return ProviderFactory.getInstance().isEmailConfigured();
+}
+
+export function getAIProvider(preferredProvider?: AIProviderType): BaseAIProvider {
+  return ProviderFactory.getInstance().getAIProvider(preferredProvider);
+}
+
+export function isAIConfigured(): boolean {
+  return ProviderFactory.getInstance().isAIConfigured();
+}
+
+export function getConfiguredAIProviderName(): AIProviderType | null {
+  return ProviderFactory.getInstance().getConfiguredAIProviderName();
 }

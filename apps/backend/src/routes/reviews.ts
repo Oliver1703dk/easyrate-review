@@ -81,6 +81,20 @@ router.get(
   }
 );
 
+// GET /api/v1/reviews/generation-status - Get response generation rate limit status
+router.get(
+  '/generation-status',
+  authenticateJwt,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const status = await reviewService.getResponseGenerationStatus(req.businessId!);
+      sendSuccess(res, status);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // GET /api/v1/reviews/:id - Get single review
 router.get(
   '/:id',
@@ -151,6 +165,22 @@ router.post(
       const { text } = req.body as z.infer<typeof replyBodySchema>;
       const review = await reviewService.replyToReview(req.businessId!, id, text);
       sendSuccess(res, { review });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// POST /api/v1/reviews/:id/generate-response - Generate AI response for a review
+router.post(
+  '/:id/generate-response',
+  authenticateJwt,
+  validateParams(idParamSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params.id as string;
+      const result = await reviewService.generateResponse(req.businessId!, id);
+      sendSuccess(res, result);
     } catch (error) {
       next(error);
     }

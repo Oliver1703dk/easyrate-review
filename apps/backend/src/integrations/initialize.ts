@@ -5,6 +5,7 @@ import { easyTableAdapter, easyTablePoller } from './easytable/index.js';
 import { orderQueueService } from '../services/OrderQueueService.js';
 import { startQueueProcessor, stopQueueProcessor } from '../jobs/processOrderQueue.js';
 import { startNotificationProcessor, stopNotificationProcessor } from '../jobs/processNotifications.js';
+import { startInsightsProcessor, stopInsightsProcessor } from '../jobs/processInsights.js';
 
 export async function initializeIntegrations(): Promise<void> {
   console.log('[Integrations] Initializing integration layer...');
@@ -38,12 +39,18 @@ export async function initializeIntegrations(): Promise<void> {
   // Start the notification processor
   startNotificationProcessor();
 
+  // Start the insights processor (for scheduled AI analysis)
+  startInsightsProcessor();
+
   console.log('[Integrations] Integration layer initialized');
   console.log(`[Integrations] Registered adapters: ${IntegrationRegistry.getAllNames().join(', ')}`);
 }
 
 export async function shutdownIntegrations(): Promise<void> {
   console.log('[Integrations] Shutting down integration layer...');
+
+  // Stop the insights processor
+  stopInsightsProcessor();
 
   // Stop the notification processor
   stopNotificationProcessor();

@@ -1,10 +1,19 @@
 import { useState } from 'react';
-import { ExternalLink, MessageSquare, Send, X, CheckCircle, AlertCircle } from 'lucide-react';
+import {
+  ExternalLink,
+  MessageSquare,
+  Send,
+  X,
+  CheckCircle,
+  AlertCircle,
+  Sparkles,
+} from 'lucide-react';
 import { Card, CardContent, Badge, Button, Textarea, Spinner } from '@easyrate/ui';
 import { DASHBOARD_TEXT } from '@easyrate/shared';
 import type { Review } from '@easyrate/shared';
 import { StarDisplay } from './StarDisplay';
 import { useReviewReply } from '../../../hooks/useReviewReply';
+import { useGenerateResponse } from '../../../hooks/useGenerateResponse';
 
 interface ReviewCardProps {
   review: Review;
@@ -15,6 +24,13 @@ export function ReviewCard({ review, onReplySuccess }: ReviewCardProps) {
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState('');
   const { sendReply, isSending, error, clearError } = useReviewReply();
+  const {
+    generate,
+    isGenerating,
+    error: generateError,
+    clearError: clearGenerateError,
+    status: generationStatus,
+  } = useGenerateResponse();
 
   const formatDate = (date: Date | string) => {
     const d = new Date(date);
@@ -35,7 +51,10 @@ export function ReviewCard({ review, onReplySuccess }: ReviewCardProps) {
 
   const hasEmail = Boolean(review.customer?.email);
   const hasResponse = Boolean(review.response);
+  const hasFeedbackText = Boolean(review.feedbackText);
   const canReply = hasEmail && !hasResponse;
+  const canGenerateResponse =
+    canReply && hasFeedbackText && (generationStatus?.canGenerate ?? true);
 
   const handleSendReply = async () => {
     if (!replyText.trim()) return;
@@ -54,6 +73,17 @@ export function ReviewCard({ review, onReplySuccess }: ReviewCardProps) {
     setIsReplying(false);
     setReplyText('');
     clearError();
+    clearGenerateError();
+  };
+
+  const handleGenerateResponse = async () => {
+    try {
+      const generatedText = await generate(review.id);
+      setReplyText(generatedText);
+      setIsReplying(true);
+    } catch {
+      // Error is handled by the hook
+    }
   };
 
   return (
@@ -123,29 +153,62 @@ export function ReviewCard({ review, onReplySuccess }: ReviewCardProps) {
               </p>
             )}
 
-            {/* Reply button and form */}
+            {/* Reply and Generate buttons */}
             {canReply && !isReplying && (
-              <div className="mt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsReplying(true)}
-                >
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setIsReplying(true)}>
                   <MessageSquare className="mr-2 h-4 w-4" />
                   {DASHBOARD_TEXT.reviews.reply}
                 </Button>
+                {hasFeedbackText && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateResponse}
+                    disabled={isGenerating || !canGenerateResponse}
+                  >
+                    {isGenerating ? (
+                      <Spinner size="sm" className="mr-2" />
+                    ) : (
+                      <Sparkles className="mr-2 h-4 w-4" />
+                    )}
+                    {isGenerating
+                      ? DASHBOARD_TEXT.reviews.generating
+                      : DASHBOARD_TEXT.reviews.generateResponse}
+                  </Button>
+                )}
+                {generationStatus && (
+                  <span className="text-xs text-muted-foreground">
+                    {generationStatus.canGenerate
+                      ? `${DASHBOARD_TEXT.reviews.remainingGenerations}: ${generationStatus.remainingToday}`
+                      : DASHBOARD_TEXT.reviews.rateLimitReached}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Generation error display */}
+            {generateError && !isReplying && (
+              <div className="mt-2 flex items-center gap-2 text-sm text-red-600">
+                <AlertCircle className="h-4 w-4" />
+                <span>{generateError}</span>
               </div>
             )}
 
             {/* Reply form */}
             {isReplying && (
               <div className="mt-4 space-y-3">
+                {replyText && (
+                  <p className="text-xs text-muted-foreground">
+                    {DASHBOARD_TEXT.reviews.editBeforeSending}
+                  </p>
+                )}
                 <Textarea
                   placeholder={DASHBOARD_TEXT.reviews.replyPlaceholder}
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
                   maxLength={2000}
-                  rows={3}
+                  rows={4}
                   disabled={isSending}
                 />
                 {error && (

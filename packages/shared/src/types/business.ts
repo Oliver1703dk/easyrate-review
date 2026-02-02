@@ -1,3 +1,5 @@
+import type { AISettings } from './ai.js';
+
 export interface BusinessSettings {
   defaultDelayMinutes: number;
   smsEnabled: boolean;
@@ -5,6 +7,7 @@ export interface BusinessSettings {
   googleReviewUrl?: string;
   primaryColor?: string;
   logoUrl?: string;
+  aiSettings?: AISettings;
 }
 
 export interface IntegrationConfig {

@@ -7,6 +7,7 @@ import {
   ChannelPerformanceCard,
   InternalFeedbackCard,
 } from '../../components/dashboard/overview';
+import { InsightsCard } from '../../components/dashboard/insights';
 import { useReviewStats, useNotificationStats } from '../../hooks';
 
 export function OverviewPage() {
@@ -116,6 +117,11 @@ export function OverviewPage() {
             avgResponseTime={internalFeedback.avgResponseTime}
             pending={internalFeedback.pending}
           />
+        </div>
+
+        {/* AI Insights */}
+        <div className="mt-6">
+          <InsightsCard />
         </div>
       </div>
     </div>

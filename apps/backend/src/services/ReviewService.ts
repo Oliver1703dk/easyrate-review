@@ -1,11 +1,21 @@
 import mongoose from 'mongoose';
-import type { CreateReviewInput, Review as ReviewType, ReviewFilters, ConsentRecord, ReviewStats } from '@easyrate/shared';
+import type {
+  CreateReviewInput,
+  Review as ReviewType,
+  ReviewFilters,
+  ConsentRecord,
+  ReviewStats,
+  ResponseGenerationStatus,
+} from '@easyrate/shared';
 import { EMAIL_TEMPLATES } from '@easyrate/shared';
 import { Review, ReviewDocument } from '../models/Review.js';
+import { ResponseGenerationLog } from '../models/ResponseGenerationLog.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { calculatePagination, PaginationMeta } from '../utils/response.js';
-import { getEmailProvider, isEmailConfigured } from '../providers/ProviderFactory.js';
+import { getEmailProvider, isEmailConfigured, getAIProvider, isAIConfigured } from '../providers/ProviderFactory.js';
 import { businessService } from './BusinessService.js';
+
+const DAILY_GENERATION_LIMIT = 50;
 
 interface CreateReviewWithConsent extends Omit<CreateReviewInput, 'businessId'> {
   consent?: ConsentRecord;
@@ -306,6 +316,97 @@ export class ReviewService {
 
     await review.save();
     return toReviewType(review);
+  }
+
+  async getResponseGenerationStatus(businessId: string): Promise<ResponseGenerationStatus> {
+    const startOfDay = new Date();
+    startOfDay.setUTCHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
+    const businessObjectId = new mongoose.Types.ObjectId(businessId);
+    const todayCount = await ResponseGenerationLog.countDocuments({
+      businessId: businessObjectId,
+      generatedAt: { $gte: startOfDay, $lte: endOfDay },
+    });
+
+    const remainingToday = Math.max(0, DAILY_GENERATION_LIMIT - todayCount);
+
+    // Calculate when the limit resets (midnight UTC)
+    const resetsAt = new Date();
+    resetsAt.setUTCDate(resetsAt.getUTCDate() + 1);
+    resetsAt.setUTCHours(0, 0, 0, 0);
+
+    return {
+      canGenerate: remainingToday > 0,
+      remainingToday,
+      dailyLimit: DAILY_GENERATION_LIMIT,
+      resetsAt,
+    };
+  }
+
+  async generateResponse(
+    businessId: string,
+    reviewId: string
+  ): Promise<{ responseText: string; remainingToday: number }> {
+    // Verify review exists and belongs to business
+    const review = await Review.findOne({ _id: reviewId, businessId });
+    if (!review) {
+      throw new NotFoundError('Anmeldelse ikke fundet');
+    }
+
+    // Verify review has feedback text
+    if (!review.feedbackText) {
+      throw new ValidationError('Anmeldelsen har ingen feedback at basere svar på', {
+        code: 'NO_FEEDBACK_TEXT',
+      });
+    }
+
+    // Verify AI is configured
+    if (!isAIConfigured()) {
+      throw new ValidationError('AI er ikke konfigureret', { code: 'AI_NOT_CONFIGURED' });
+    }
+
+    // Check rate limit
+    const status = await this.getResponseGenerationStatus(businessId);
+    if (!status.canGenerate) {
+      throw new ValidationError('Daglig grænse for AI-generering er nået', {
+        code: 'RATE_LIMIT_EXCEEDED',
+        remainingToday: 0,
+        resetsAt: status.resetsAt,
+      });
+    }
+
+    // Get business info for prompt
+    const business = await businessService.findByIdOrThrow(businessId);
+
+    // Generate response using AI provider
+    const aiProvider = getAIProvider(business.settings.aiSettings?.provider);
+    const result = await aiProvider.generateResponse({
+      review: {
+        rating: review.rating,
+        feedbackText: review.feedbackText,
+        customerName: review.customer?.name || undefined,
+      },
+      businessName: business.name,
+    });
+
+    // Log the generation for rate limiting
+    const businessObjectId = new mongoose.Types.ObjectId(businessId);
+    const reviewObjectId = new mongoose.Types.ObjectId(reviewId);
+    await ResponseGenerationLog.create({
+      businessId: businessObjectId,
+      reviewId: reviewObjectId,
+      generatedAt: new Date(),
+      tokensUsed: result.tokensUsed,
+      modelUsed: result.modelUsed,
+    });
+
+    return {
+      responseText: result.responseText,
+      remainingToday: status.remainingToday - 1,
+    };
   }
 }
 

@@ -12,3 +12,9 @@ export type { UserDocument } from './User.js';
 
 export { OrderQueue } from './OrderQueue.js';
 export type { OrderQueueDocument } from './OrderQueue.js';
+
+export { InsightRun } from './InsightRun.js';
+export type { InsightRunDocument } from './InsightRun.js';
+
+export { ResponseGenerationLog } from './ResponseGenerationLog.js';
+export type { ResponseGenerationLogDocument } from './ResponseGenerationLog.js';
