@@ -54,7 +54,8 @@ export function FlowNode({ node, isActive = true, isSelected, onClick, children 
   const Icon = iconMap[node?.icon] || CheckCircle;
   const flowText = DASHBOARD_TEXT?.flow?.nodes || {};
   const title = flowText[node?.title as keyof typeof flowText] || node?.title || '';
-  const description = flowText[node?.description as keyof typeof flowText] || node?.description || '';
+  const description =
+    flowText[node?.description as keyof typeof flowText] || node?.description || '';
 
   const nodeType = node?.type || 'trigger';
 
@@ -69,24 +70,28 @@ export function FlowNode({ node, isActive = true, isSelected, onClick, children 
       onClick={onClick}
     >
       <div className="flex items-start gap-3 p-4">
-        <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-lg', iconBgColors[nodeType] || 'bg-slate-100 text-slate-600')}>
+        <div
+          className={cn(
+            'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
+            iconBgColors[nodeType] || 'bg-slate-100 text-slate-600'
+          )}
+        >
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h3 className="truncate text-sm font-medium text-foreground">{title}</h3>
             <Badge variant={isActive ? 'success' : 'secondary'} className="shrink-0 text-[10px]">
-              {isActive ? (DASHBOARD_TEXT?.flow?.status?.active || 'Aktiv') : (DASHBOARD_TEXT?.flow?.status?.inactive || 'Inaktiv')}
+              {isActive
+                ? DASHBOARD_TEXT?.flow?.status?.active || 'Aktiv'
+                : DASHBOARD_TEXT?.flow?.status?.inactive || 'Inaktiv'}
             </Badge>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">{description}</p>
         </div>
       </div>
       {children && (
-        <div
-          className="relative z-10 border-t px-4 py-3"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="relative z-10 border-t px-4 py-3" onClick={(e) => e.stopPropagation()}>
           {children}
         </div>
       )}

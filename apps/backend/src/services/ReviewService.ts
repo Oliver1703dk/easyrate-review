@@ -356,8 +356,9 @@ export class ReviewService {
       throw new NotFoundError('Anmeldelse ikke fundet');
     }
 
-    // Verify review has feedback text
-    if (!review.feedbackText) {
+    // Verify review has feedback text (only required for negative reviews)
+    const isNegativeReview = review.rating <= 3;
+    if (isNegativeReview && !review.feedbackText) {
       throw new ValidationError('Anmeldelsen har ingen feedback at basere svar på', {
         code: 'NO_FEEDBACK_TEXT',
       });

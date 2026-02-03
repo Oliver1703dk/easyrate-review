@@ -12,7 +12,13 @@ interface FlowCanvasProps {
   selectedNodeId: string | null;
 }
 
-export function FlowCanvas({ smsEnabled, emailEnabled, onToggleChannel, onNodeSelect, selectedNodeId }: FlowCanvasProps) {
+export function FlowCanvas({
+  smsEnabled,
+  emailEnabled,
+  onToggleChannel,
+  onNodeSelect,
+  selectedNodeId,
+}: FlowCanvasProps) {
   const flow = DEFAULT_FLOW;
 
   // Guard against DEFAULT_FLOW not being loaded
@@ -48,9 +54,13 @@ export function FlowCanvas({ smsEnabled, emailEnabled, onToggleChannel, onNodeSe
 
       {/* Debug info */}
       <div className="mb-4 rounded bg-slate-100 p-2 text-xs">
-        <div>SMS: {smsEnabled ? 'ON' : 'OFF'} | Email: {emailEnabled ? 'ON' : 'OFF'}</div>
-        <div>SMS toggle disabled: {(smsEnabled && !emailEnabled) ? 'YES (last channel)' : 'NO'}</div>
-        <div>Email toggle disabled: {(emailEnabled && !smsEnabled) ? 'YES (last channel)' : 'NO'}</div>
+        <div>
+          SMS: {smsEnabled ? 'ON' : 'OFF'} | Email: {emailEnabled ? 'ON' : 'OFF'}
+        </div>
+        <div>SMS toggle disabled: {smsEnabled && !emailEnabled ? 'YES (last channel)' : 'NO'}</div>
+        <div>
+          Email toggle disabled: {emailEnabled && !smsEnabled ? 'YES (last channel)' : 'NO'}
+        </div>
       </div>
 
       {/* Channel Nodes - Side by Side */}
@@ -103,8 +113,18 @@ export function FlowCanvas({ smsEnabled, emailEnabled, onToggleChannel, onNodeSe
           <svg className="h-8 w-64" viewBox="0 0 256 32" fill="none">
             {smsEnabled && emailEnabled ? (
               <>
-                <path d="M64 0 L64 8 Q64 16 72 16 L128 16" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="6 4" />
-                <path d="M192 0 L192 8 Q192 16 184 16 L128 16" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="6 4" />
+                <path
+                  d="M64 0 L64 8 Q64 16 72 16 L128 16"
+                  stroke="#cbd5e1"
+                  strokeWidth="2"
+                  strokeDasharray="6 4"
+                />
+                <path
+                  d="M192 0 L192 8 Q192 16 184 16 L128 16"
+                  stroke="#cbd5e1"
+                  strokeWidth="2"
+                  strokeDasharray="6 4"
+                />
                 <path d="M128 16 L128 32" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="6 4" />
               </>
             ) : (
@@ -148,8 +168,18 @@ export function FlowCanvas({ smsEnabled, emailEnabled, onToggleChannel, onNodeSe
 
           {/* Merge to Thank You */}
           <svg className="h-12 w-96" viewBox="0 0 384 48" fill="none">
-            <path d="M120 0 L120 16 Q120 24 128 24 L192 24" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="6 4" />
-            <path d="M264 0 L264 16 Q264 24 256 24 L192 24" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="6 4" />
+            <path
+              d="M120 0 L120 16 Q120 24 128 24 L192 24"
+              stroke="#cbd5e1"
+              strokeWidth="2"
+              strokeDasharray="6 4"
+            />
+            <path
+              d="M264 0 L264 16 Q264 24 256 24 L192 24"
+              stroke="#cbd5e1"
+              strokeWidth="2"
+              strokeDasharray="6 4"
+            />
             <path d="M192 24 L192 48" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="6 4" />
           </svg>
 
@@ -165,7 +195,8 @@ export function FlowCanvas({ smsEnabled, emailEnabled, onToggleChannel, onNodeSe
       {/* Warning if no channels active */}
       {!hasActiveChannel && (
         <div className="mt-8 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
-          {DASHBOARD_TEXT?.flow?.validation?.atLeastOneRequired || 'Mindst én kanal skal være aktiv'}
+          {DASHBOARD_TEXT?.flow?.validation?.atLeastOneRequired ||
+            'Mindst én kanal skal være aktiv'}
         </div>
       )}
     </div>

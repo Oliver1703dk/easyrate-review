@@ -11,7 +11,11 @@ export function FlowBranch({ leftNode, rightNode, className }: FlowBranchProps) 
   return (
     <div className={cn('relative', className)}>
       {/* Branch lines SVG */}
-      <svg className="absolute left-1/2 top-0 h-12 w-64 -translate-x-1/2" viewBox="0 0 256 48" fill="none">
+      <svg
+        className="absolute left-1/2 top-0 h-12 w-64 -translate-x-1/2"
+        viewBox="0 0 256 48"
+        fill="none"
+      >
         {/* Left branch */}
         <path
           d="M128 0 L128 16 Q128 24 120 24 L64 24 Q56 24 56 32 L56 48"

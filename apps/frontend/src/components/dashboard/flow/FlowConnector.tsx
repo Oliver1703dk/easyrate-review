@@ -6,7 +6,11 @@ interface FlowConnectorProps {
   className?: string;
 }
 
-export function FlowConnector({ direction = 'vertical', length = 'medium', className }: FlowConnectorProps) {
+export function FlowConnector({
+  direction = 'vertical',
+  length = 'medium',
+  className,
+}: FlowConnectorProps) {
   const lengthMap = {
     short: direction === 'vertical' ? 'h-6' : 'w-6',
     medium: direction === 'vertical' ? 'h-10' : 'w-10',

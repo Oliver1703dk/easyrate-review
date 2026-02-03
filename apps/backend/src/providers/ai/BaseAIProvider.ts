@@ -141,7 +141,9 @@ REGLER:
 Svar KUN med svarteksten, ingen forklaringer.`;
     }
 
-    return `Du er kundeservicemedarbejder for ${businessName}.
+    // Different prompt for positive reviews with or without feedback text
+    if (feedbackText) {
+      return `Du er kundeservicemedarbejder for ${businessName}.
 
 Skriv et varmt, personligt svar på dansk til denne positive kundeanmeldelse.
 
@@ -156,6 +158,26 @@ REGLER:
 4. Inviter dem til at komme igen
 5. Max 100 ord
 6. Hold tonen varm og personlig
+
+Svar KUN med svarteksten, ingen forklaringer.`;
+    }
+
+    // Positive review without feedback text (e.g., went directly to Google)
+    return `Du er kundeservicemedarbejder for ${businessName}.
+
+Skriv et varmt, personligt svar på dansk til denne positive kundeanmeldelse. Kunden gav ${review.rating} stjerner men skrev ingen specifik feedback.
+
+RATING: ${review.rating}/5 stjerner
+KUNDENS NAVN: ${customerName}
+
+REGLER:
+1. Tak kunden oprigtigt for deres positive bedømmelse
+2. Udtryk glæde over at de havde en god oplevelse
+3. Nævn at deres støtte betyder meget for jer
+4. Inviter dem til at komme igen
+5. Max 80 ord
+6. Hold tonen varm og personlig
+7. Undgå at referere til specifik feedback (der er ingen)
 
 Svar KUN med svarteksten, ingen forklaringer.`;
   }

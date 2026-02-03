@@ -9,7 +9,9 @@ interface FlowChannelToggleProps {
 export function FlowChannelToggle({ enabled, onChange, disabled }: FlowChannelToggleProps) {
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent Card's onClick from firing
-    console.log(`[Toggle] Clicked - enabled: ${enabled}, disabled: ${disabled}, will change to: ${!enabled}`);
+    console.log(
+      `[Toggle] Clicked - enabled: ${enabled}, disabled: ${disabled}, will change to: ${!enabled}`
+    );
     if (!disabled) {
       onChange(!enabled);
     } else {

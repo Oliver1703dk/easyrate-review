@@ -6,7 +6,10 @@ import { FlowCanvas, FlowSidebar } from '../../components/dashboard/flow';
 import { useFlowSettings } from '../../hooks/useFlowSettings';
 
 // Error boundary to catch rendering errors
-class FlowErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+class FlowErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
   constructor(props: { children: ReactNode }) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -42,8 +45,18 @@ class FlowErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
 }
 
 function FlowPageContent() {
-  const { business, channelSettings, isLoading, validationError, toggleChannel, clearValidationError } = useFlowSettings();
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>('landing');
+  const {
+    business,
+    channelSettings,
+    templateSettings,
+    isLoading,
+    validationError,
+    toggleChannel,
+    updateTemplate,
+    updateDelay,
+    clearValidationError,
+  } = useFlowSettings();
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   // Clear validation error after a delay
   useEffect(() => {
@@ -63,7 +76,10 @@ function FlowPageContent() {
 
   return (
     <div className="flex h-full flex-col">
-      <Header title={DASHBOARD_TEXT?.flow?.title || 'Flow / Automatisering'} subtitle={DASHBOARD_TEXT?.flow?.subtitle || 'Visualiser din anmeldelsesflow'} />
+      <Header
+        title={DASHBOARD_TEXT?.flow?.title || 'Flow / Automatisering'}
+        subtitle={DASHBOARD_TEXT?.flow?.subtitle || 'Visualiser din anmeldelsesflow'}
+      />
 
       {/* Validation Error Toast */}
       {validationError && (
@@ -86,7 +102,19 @@ function FlowPageContent() {
 
         {/* Sidebar */}
         <div className="hidden lg:block">
-          <FlowSidebar business={business} selectedNodeId={selectedNodeId} smsEnabled={channelSettings.smsEnabled} emailEnabled={channelSettings.emailEnabled} />
+          <FlowSidebar
+            business={business}
+            selectedNodeId={selectedNodeId}
+            smsEnabled={channelSettings.smsEnabled}
+            emailEnabled={channelSettings.emailEnabled}
+            smsTemplate={templateSettings.smsTemplate}
+            emailTemplate={templateSettings.emailTemplate}
+            delayMinutes={templateSettings.delayMinutes}
+            onSmsTemplateChange={(value) => updateTemplate('sms', value)}
+            onEmailTemplateChange={(value) => updateTemplate('email', value)}
+            onDelayChange={updateDelay}
+            onToggleChannel={toggleChannel}
+          />
         </div>
       </div>
     </div>

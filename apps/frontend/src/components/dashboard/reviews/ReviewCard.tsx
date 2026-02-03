@@ -52,9 +52,11 @@ export function ReviewCard({ review, onReplySuccess }: ReviewCardProps) {
   const hasEmail = Boolean(review.customer?.email);
   const hasResponse = Boolean(review.response);
   const hasFeedbackText = Boolean(review.feedbackText);
+  const isPositiveReview = review.rating >= 4;
   const canReply = hasEmail && !hasResponse;
+  // Allow AI response for: reviews with feedback text OR positive reviews (even without feedback)
   const canGenerateResponse =
-    canReply && hasFeedbackText && (generationStatus?.canGenerate ?? true);
+    canReply && (hasFeedbackText || isPositiveReview) && (generationStatus?.canGenerate ?? true);
 
   const handleSendReply = async () => {
     if (!replyText.trim()) return;
@@ -160,7 +162,7 @@ export function ReviewCard({ review, onReplySuccess }: ReviewCardProps) {
                   <MessageSquare className="mr-2 h-4 w-4" />
                   {DASHBOARD_TEXT.reviews.reply}
                 </Button>
-                {hasFeedbackText && (
+                {(hasFeedbackText || isPositiveReview) && (
                   <Button
                     variant="outline"
                     size="sm"

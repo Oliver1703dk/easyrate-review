@@ -244,6 +244,32 @@ export const DASHBOARD_TEXT = {
       subheadline: 'Undertitel',
       condition1: 'Betingelse 1',
       condition2: 'Betingelse 2',
+      // Panel titles
+      smsConfig: 'SMS Konfiguration',
+      emailConfig: 'Email Konfiguration',
+      triggerInfo: 'Trigger Information',
+      branchInfo: 'Routing Regler',
+      internalInfo: 'Intern Feedback',
+      externalInfo: 'Ekstern Anmeldelse',
+      thankYouInfo: 'Tak Side',
+      // Config fields
+      messageTemplate: 'Beskedskabelon',
+      delayMinutes: 'Forsinkelse (minutter)',
+      delayHelp: 'Tid efter ordre før besked sendes',
+      characterCount: 'tegn',
+      enabled: 'Aktiveret',
+      // Info text
+      triggerDescription: 'Ordrer fra dine integrationer starter automatisk dette flow.',
+      branchExplanation: 'Anmeldelser med 1-3 stjerner sendes til intern feedback. Anmeldelser med 4-5 stjerner sendes til ekstern anmeldelse.',
+      internalDescription: 'Kunder med negative oplevelser kan give privat feedback direkte til dig.',
+      externalDescription: 'Tilfredse kunder opfordres til at dele deres oplevelse på Google.',
+      thankYouDescription: 'Alle kunder ser denne side efter at have givet feedback.',
+      selectNode: 'Klik på en node for at se detaljer',
+      // Variables help
+      variablesTitle: 'Tilgængelige variabler',
+      variableCustomerName: '{{customerName}} - Kundens navn',
+      variableBusinessName: '{{businessName}} - Virksomhedens navn',
+      variableReviewLink: '{{reviewLink}} - Link til anmeldelse',
     },
     validation: {
       atLeastOneRequired: 'Mindst én kanal skal være aktiv',
