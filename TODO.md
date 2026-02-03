@@ -118,21 +118,21 @@
 **Overview:** Ensure the flow page sidebar shows the correct configuration or preview screen when each flow node is clicked. Currently only the landing node shows a dedicated panel; trigger, SMS, email, branch, internal feedback, external review, and thank-you nodes do not show node-specific content. Each node type should display the appropriate settings, copy, or preview so users can understand and configure that step of the flow. Only nodes that has configuration should show configuration. 
 
 ### Frontend
-- [ ] Show correct sidebar panel when trigger node is selected (e.g. trigger description, integration source)
-- [ ] Show SMS-specific panel when SMS node is selected (template, delay, toggle state)
-- [ ] Show email-specific panel when email node is selected (template, delay, toggle state)
-- [ ] Keep/refine landing panel when landing node is selected (rating type, headline, conditions)
-- [ ] Show branch-specific panel when branch node is selected (1–3 vs 4–5 star split, conditions)
-- [ ] Show internal-feedback panel when internal node is selected (private form preview, copy)
-- [ ] Show external-review panel when external node is selected (Google/share options, copy)
-- [ ] Show thank-you panel when thank-you node is selected (success copy, CTA)
+- [ ] Show SMS configuration panel when SMS node is clicked (template, delay, toggle state) — config lives here, NOT in settings
+- [ ] Show email configuration panel when email node is clicked (template, delay, toggle state) — config lives here, NOT in settings
+- [ ] Show info/preview only (no config) when trigger node is selected (trigger description, integration source)
+- [ ] Show info/preview only (no config) when landing node is selected (rating type, headline, conditions)
+- [ ] Show info/preview only (no config) when branch node is selected (1–3 vs 4–5 star split explanation)
+- [ ] Show info/preview only (no config) when internal-feedback node is selected (private form preview, copy)
+- [ ] Show info/preview only (no config) when external-review node is selected (Google/share options, copy)
+- [ ] Show info/preview only (no config) when thank-you node is selected (success copy, CTA)
 - [ ] When no node or unknown node is selected, show flow overview or empty state instead of wrong content
 - [ ] Remove or relocate debug UI (e.g. channel toggles) so it does not clutter the flow canvas
 
 ### Notes
+- **SMS and email are the only nodes with configuration.** Clicking SMS or email should display editable config (template, delay, toggles). All other nodes show read-only info/preview only.
 - Sidebar layout and content should match the node type; avoid reusing the landing preview for unrelated nodes.
 - Prefer one panel per node type so the flow screen is predictable and easy to use.
-- **SMS and email messages:** Message content (templates) should be set in the flow when clicking the SMS or email node, not in settings. Configure copy, delay, and toggles in the node-specific panels rather than in a separate settings page.
 
 ---
 

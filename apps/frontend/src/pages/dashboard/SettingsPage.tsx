@@ -10,8 +10,10 @@ import {
   BrandingSection,
   GoogleReviewSection,
   AIInsightsSection,
+  GoogleBusinessSection,
 } from '../../components/dashboard/settings';
 import { useBusinessSettings, useInsights } from '../../hooks';
+import { isGoogleConfigured } from '../../utils/config';
 
 export function SettingsPage() {
   const { business, isLoading, isSaving, updateSettings } = useBusinessSettings();
@@ -127,6 +129,8 @@ export function SettingsPage() {
             googleReviewUrl={googleReviewUrl}
             onGoogleReviewUrlChange={setGoogleReviewUrl}
           />
+
+          <GoogleBusinessSection isConfigured={isGoogleConfigured()} />
 
           <AIInsightsSection
             enabled={aiEnabled}

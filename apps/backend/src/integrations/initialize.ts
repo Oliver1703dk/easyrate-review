@@ -6,6 +6,7 @@ import { orderQueueService } from '../services/OrderQueueService.js';
 import { startQueueProcessor, stopQueueProcessor } from '../jobs/processOrderQueue.js';
 import { startNotificationProcessor, stopNotificationProcessor } from '../jobs/processNotifications.js';
 import { startInsightsProcessor, stopInsightsProcessor } from '../jobs/processInsights.js';
+import { startGoogleReviewsProcessor, stopGoogleReviewsProcessor } from '../jobs/processGoogleReviews.js';
 
 export async function initializeIntegrations(): Promise<void> {
   console.log('[Integrations] Initializing integration layer...');
@@ -42,12 +43,18 @@ export async function initializeIntegrations(): Promise<void> {
   // Start the insights processor (for scheduled AI analysis)
   startInsightsProcessor();
 
+  // Start the Google reviews processor (for syncing Google Business reviews)
+  startGoogleReviewsProcessor();
+
   console.log('[Integrations] Integration layer initialized');
   console.log(`[Integrations] Registered adapters: ${IntegrationRegistry.getAllNames().join(', ')}`);
 }
 
 export async function shutdownIntegrations(): Promise<void> {
   console.log('[Integrations] Shutting down integration layer...');
+
+  // Stop the Google reviews processor
+  stopGoogleReviewsProcessor();
 
   // Stop the insights processor
   stopInsightsProcessor();

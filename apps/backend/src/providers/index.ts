@@ -9,6 +9,8 @@ export {
   getAIProvider,
   isAIConfigured,
   getConfiguredAIProviderName,
+  getGoogleProvider,
+  isGoogleConfigured,
 } from './ProviderFactory.js';
 export {
   GatewayApiProvider,
@@ -29,3 +31,12 @@ export {
   OpenAIProvider,
   type OpenAIConfig,
 } from './ai/index.js';
+
+// Google Provider
+export {
+  GoogleBusinessProvider,
+  googleBusinessProvider,
+  type GoogleReview,
+  type GoogleReviewsResponse,
+  type GoogleAccount,
+} from './google/GoogleBusinessProvider.js';

@@ -2,6 +2,7 @@ import type { SmsProvider, EmailProvider, AIProviderType } from '@easyrate/share
 import { GatewayApiProvider, type GatewayApiConfig } from './sms/GatewayApiProvider.js';
 import { SendGridProvider, type SendGridConfig } from './email/SendGridProvider.js';
 import { BaseAIProvider, createGrokProvider, createOpenAIProvider } from './ai/index.js';
+import { GoogleBusinessProvider } from './google/GoogleBusinessProvider.js';
 
 /**
  * Singleton factory for creating message providers from environment config
@@ -12,6 +13,7 @@ export class ProviderFactory {
   private smsProvider: SmsProvider | null = null;
   private emailProvider: EmailProvider | null = null;
   private aiProvider: BaseAIProvider | null = null;
+  private googleProvider: GoogleBusinessProvider | null = null;
 
   private constructor() {}
 
@@ -95,6 +97,23 @@ export class ProviderFactory {
   }
 
   /**
+   * Get or create the Google Business provider
+   */
+  getGoogleProvider(): GoogleBusinessProvider {
+    if (!this.googleProvider) {
+      this.googleProvider = new GoogleBusinessProvider();
+    }
+    return this.googleProvider;
+  }
+
+  /**
+   * Check if Google OAuth is configured
+   */
+  isGoogleConfigured(): boolean {
+    return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+  }
+
+  /**
    * Get the name of the configured AI provider
    */
   getConfiguredAIProviderName(): AIProviderType | null {
@@ -148,6 +167,7 @@ export class ProviderFactory {
     this.smsProvider = null;
     this.emailProvider = null;
     this.aiProvider = null;
+    this.googleProvider = null;
   }
 }
 
@@ -178,4 +198,12 @@ export function isAIConfigured(): boolean {
 
 export function getConfiguredAIProviderName(): AIProviderType | null {
   return ProviderFactory.getInstance().getConfiguredAIProviderName();
+}
+
+export function getGoogleProvider(): GoogleBusinessProvider {
+  return ProviderFactory.getInstance().getGoogleProvider();
+}
+
+export function isGoogleConfigured(): boolean {
+  return ProviderFactory.getInstance().isGoogleConfigured();
 }

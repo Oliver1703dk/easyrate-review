@@ -9,6 +9,9 @@ import uploadsRouter from './uploads.js';
 import gdprRouter from './gdpr.js';
 import testRouter from './test.js';
 import insightsRouter from './insights.js';
+import googleAuthRouter from './google-auth.js';
+import googleConfigRouter from './google-config.js';
+import externalReviewsRouter from './external-reviews.js';
 
 const router = Router();
 
@@ -23,5 +26,8 @@ router.use('/uploads', uploadsRouter);
 router.use('/gdpr', gdprRouter);
 router.use('/test', testRouter);
 router.use('/insights', insightsRouter);
+router.use('/google/auth', googleAuthRouter);
+router.use('/google', googleConfigRouter);
+router.use('/external-reviews', externalReviewsRouter);
 
 export default router;

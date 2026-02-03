@@ -8,8 +8,9 @@ interface ReviewFiltersProps {
   onSearchChange: (value: string) => void;
   rating: ReviewRating | undefined;
   onRatingChange: (value: ReviewRating | undefined) => void;
-  source: string | undefined;
-  onSourceChange: (value: string | undefined) => void;
+  source?: string | undefined;
+  onSourceChange?: (value: string | undefined) => void;
+  showSourceFilter?: boolean;
 }
 
 export function ReviewFilters({
@@ -19,6 +20,7 @@ export function ReviewFilters({
   onRatingChange,
   source,
   onSourceChange,
+  showSourceFilter = true,
 }: ReviewFiltersProps) {
   return (
     <div className="flex flex-wrap items-center gap-4">
@@ -50,17 +52,19 @@ export function ReviewFilters({
         <SelectOption value="1">1 {DASHBOARD_TEXT.reviews.star}</SelectOption>
       </Select>
 
-      {/* Source Filter */}
-      <Select
-        value={source ?? ''}
-        onChange={(e) => onSourceChange(e.target.value || undefined)}
-        className="w-40"
-      >
-        <SelectOption value="">{DASHBOARD_TEXT.reviews.allSources}</SelectOption>
-        <SelectOption value="dully">Dully</SelectOption>
-        <SelectOption value="easytable">EasyTable</SelectOption>
-        <SelectOption value="direct">Direkte</SelectOption>
-      </Select>
+      {/* Source Filter (only shown for internal reviews) */}
+      {showSourceFilter && onSourceChange && (
+        <Select
+          value={source ?? ''}
+          onChange={(e) => onSourceChange(e.target.value || undefined)}
+          className="w-40"
+        >
+          <SelectOption value="">{DASHBOARD_TEXT.reviews.allSources}</SelectOption>
+          <SelectOption value="dully">Dully</SelectOption>
+          <SelectOption value="easytable">EasyTable</SelectOption>
+          <SelectOption value="direct">Direkte</SelectOption>
+        </Select>
+      )}
     </div>
   );
 }

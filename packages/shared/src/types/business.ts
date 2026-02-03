@@ -1,4 +1,5 @@
 import type { AISettings } from './ai.js';
+import type { GoogleBusinessSettings } from './google.js';
 
 export interface BusinessSettings {
   defaultDelayMinutes: number;
@@ -8,6 +9,7 @@ export interface BusinessSettings {
   primaryColor?: string;
   logoUrl?: string;
   aiSettings?: AISettings;
+  googleBusiness?: GoogleBusinessSettings;
 }
 
 export interface IntegrationConfig {
