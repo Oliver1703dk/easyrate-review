@@ -13,7 +13,7 @@ export const orderDataSchema = z.object({
 });
 
 export const dullyWebhookPayloadSchema = z.object({
-  event: z.enum(['order.completed', 'order.picked_up']),
+  event: z.enum(['order.created', 'order.approved', 'order.picked_up', 'order.cancelled']),
   orderId: z.string().min(1),
   customerName: z.string().optional(),
   customerPhone: z.string().optional(),
@@ -21,20 +21,49 @@ export const dullyWebhookPayloadSchema = z.object({
   totalAmount: z.number().optional(),
   timestamp: z.string().datetime(),
   restaurantId: z.string().min(1),
-  signature: z.string().optional(),
+  cancelReason: z.string().optional(),
 });
 
+/**
+ * EasyTable booking schema matching API v2 response
+ * See: EasyTableBooking interface in types/integration.ts
+ */
 export const easyTableBookingSchema = z.object({
-  bookingId: z.string().min(1),
-  guestName: z.string().min(1),
-  guestEmail: z.string().email().optional(),
-  guestPhone: z.string().optional(),
-  partySize: z.number().int().positive(),
-  bookingDate: z.string(),
-  bookingTime: z.string(),
-  completedAt: z.string().datetime().optional(),
-  status: z.enum(['confirmed', 'seated', 'completed', 'cancelled', 'no_show']),
-  restaurantId: z.string().min(1),
+  bookingID: z.number().int().positive(),
+  externalID: z.string().optional(),
+  date: z.string(), // YYYY-MM-DD
+  arrival: z.string(), // HH:MM
+  duration: z.number().int().positive(), // minutes
+  persons: z.number().int().positive(),
+  children: z.number().int().optional(),
+  status: z.enum(['1', '2', '3']), // 1=Active, 2=Cancelled, 3=No-show
+  arrived: z.union([z.literal(0), z.literal(1)]),
+  expired: z.union([z.literal(0), z.literal(1)]),
+  customerID: z.number().int().optional(),
+  customerExternalID: z.string().optional(),
+  name: z.string().optional(),
+  email: z.string().email().optional(),
+  mobile: z.number().optional(),
+  company: z.string().optional(),
+  note: z.string().optional(),
+  guestNote: z.string().optional(),
+  tables: z
+    .array(
+      z.object({
+        tableID: z.number().int(),
+        externalID: z.string().optional(),
+        tableName: z.string().optional(),
+      })
+    )
+    .optional(),
+  tags: z
+    .array(
+      z.object({
+        tagID: z.number().int(),
+        tagName: z.string(),
+      })
+    )
+    .optional(),
 });
 
 export type OrderDataSchema = z.infer<typeof orderDataSchema>;

@@ -23,7 +23,7 @@ export interface IntegrationAdapter {
 }
 
 export interface DullyWebhookPayload {
-  event: 'order.completed' | 'order.picked_up';
+  event: 'order.created' | 'order.approved' | 'order.picked_up' | 'order.cancelled';
   orderId: string;
   customerName?: string;
   customerPhone?: string;
@@ -31,7 +31,7 @@ export interface DullyWebhookPayload {
   totalAmount?: number;
   timestamp: string;
   restaurantId: string;
-  signature?: string;
+  cancelReason?: string;
 }
 
 /**

@@ -55,7 +55,8 @@
       "Bash(lsof:*)",
       "Bash(xargs kill -9)",
       "Bash(kill:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(npx eslint:*)"
     ],
     "deny": [
       "Bash(rm:-rf*)",

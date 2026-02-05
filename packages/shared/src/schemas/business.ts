@@ -29,6 +29,9 @@ export const integrationConfigSchema = z.object({
   webhookSecret: z.string().min(1).optional(),
   enabled: z.boolean(),
   settings: z.record(z.unknown()).optional(),
+  connectedAt: z.coerce.date().optional(),
+  lastWebhookAt: z.coerce.date().optional(),
+  webhookCount: z.number().int().min(0).optional(),
 });
 
 export const createBusinessSchema = z.object({

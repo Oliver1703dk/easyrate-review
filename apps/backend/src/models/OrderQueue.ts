@@ -7,10 +7,12 @@ export interface OrderQueueDocument extends Document {
   orderId: string;
   platform: 'dully' | 'easytable';
   orderData: OrderData;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
   scheduledFor: Date;
   processedAt?: Date;
   errorMessage?: string;
+  cancelledAt?: Date;
+  cancelReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,8 +60,14 @@ const orderQueueSchema = new Schema<OrderQueueDocument>(
     status: {
       type: String,
       required: true,
-      enum: ['pending', 'processing', 'completed', 'failed'],
+      enum: ['pending', 'processing', 'completed', 'failed', 'cancelled'],
       default: 'pending',
+    },
+    cancelledAt: {
+      type: Date,
+    },
+    cancelReason: {
+      type: String,
     },
     scheduledFor: {
       type: Date,

@@ -18,6 +18,9 @@ export interface IntegrationConfig {
   webhookSecret?: string;
   enabled: boolean;
   settings?: Record<string, unknown>;
+  connectedAt?: Date;
+  lastWebhookAt?: Date;
+  webhookCount?: number;
 }
 
 export interface Business {

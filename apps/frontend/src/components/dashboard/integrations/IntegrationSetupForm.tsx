@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { ArrowLeft, Check, X, Loader2, Copy, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Check, X, Loader2, Copy, CheckCircle, Clock, Activity } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '@easyrate/ui';
 import { DASHBOARD_TEXT } from '@easyrate/shared';
 import type { IntegrationConfig } from '@easyrate/shared';
 import { useIntegrations } from '../../../hooks';
+import { useAuth } from '../../../contexts/AuthContext';
 
 interface IntegrationSetupFormProps {
   platform: 'dully' | 'easytable';
@@ -13,18 +14,18 @@ interface IntegrationSetupFormProps {
 
 export function IntegrationSetupForm({ platform, integration }: IntegrationSetupFormProps) {
   const navigate = useNavigate();
+  const { business } = useAuth();
   const { updateIntegration, testIntegration } = useIntegrations();
   const [apiKey, setApiKey] = useState(integration?.apiKey ?? '');
-  const [placeToken, setPlaceToken] = useState(
-    (integration?.settings?.placeToken as string) ?? ''
-  );
+  const [webhookSecret, setWebhookSecret] = useState(integration?.webhookSecret ?? '');
+  const [placeToken, setPlaceToken] = useState((integration?.settings?.placeToken as string) ?? '');
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<boolean | null>(null);
   const [copied, setCopied] = useState(false);
 
   const isDully = platform === 'dully';
-  const webhookUrl = `${window.location.origin}/api/v1/webhooks/${platform}`;
+  const webhookUrl = `${window.location.origin}/api/v1/webhooks/${platform}/${business?.id ?? ''}`;
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -35,6 +36,9 @@ export function IntegrationSetupForm({ platform, integration }: IntegrationSetup
         enabled: true,
         settings: isDully ? {} : { placeToken },
       };
+      if (isDully) {
+        configData.webhookSecret = webhookSecret;
+      }
       await updateIntegration(platform, configData);
       navigate('/dashboard/integrations');
     } catch (error) {
@@ -58,7 +62,22 @@ export function IntegrationSetupForm({ platform, integration }: IntegrationSetup
   const handleCopyWebhook = () => {
     navigator.clipboard.writeText(webhookUrl);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => {
+      setCopied(false);
+    }, 2000);
+  };
+
+  // Format date for display
+  const formatDate = (date: Date | string | undefined) => {
+    if (!date) return null;
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleDateString('da-DK', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   // Get platform-specific config
@@ -69,7 +88,7 @@ export function IntegrationSetupForm({ platform, integration }: IntegrationSetup
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       {/* Main Form */}
-      <div className="lg:col-span-2">
+      <div className="lg:col-span-2 space-y-6">
         <Card>
           <CardHeader>
             <div className="flex items-center gap-4">
@@ -90,9 +109,30 @@ export function IntegrationSetupForm({ platform, integration }: IntegrationSetup
                 type="password"
                 placeholder={config.apiKeyPlaceholder}
                 value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
+                onChange={(e) => {
+                  setApiKey(e.target.value);
+                }}
               />
             </div>
+
+            {/* Webhook Secret (Dully only) */}
+            {isDully && (
+              <div className="space-y-2">
+                <Label htmlFor="webhookSecret">{dullyConfig.webhookSecretLabel}</Label>
+                <Input
+                  id="webhookSecret"
+                  type="password"
+                  placeholder={dullyConfig.webhookSecretPlaceholder}
+                  value={webhookSecret}
+                  onChange={(e) => {
+                    setWebhookSecret(e.target.value);
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {dullyConfig.webhookSecretDescription}
+                </p>
+              </div>
+            )}
 
             {/* Place Token (EasyTable only) */}
             {!isDully && (
@@ -103,7 +143,9 @@ export function IntegrationSetupForm({ platform, integration }: IntegrationSetup
                   type="text"
                   placeholder={easytableConfig.placeTokenPlaceholder}
                   value={placeToken}
-                  onChange={(e) => setPlaceToken(e.target.value)}
+                  onChange={(e) => {
+                    setPlaceToken(e.target.value);
+                  }}
                 />
               </div>
             )}
@@ -122,9 +164,7 @@ export function IntegrationSetupForm({ platform, integration }: IntegrationSetup
                     )}
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {dullyConfig.webhookUrlDescription}
-                </p>
+                <p className="text-xs text-muted-foreground">{dullyConfig.webhookUrlDescription}</p>
               </div>
             )}
 
@@ -167,10 +207,60 @@ export function IntegrationSetupForm({ platform, integration }: IntegrationSetup
             </div>
           </CardContent>
         </Card>
+
+        {/* Connection Status Card (Dully only, when connected) */}
+        {isDully && integration?.enabled && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">{dullyConfig.connectionStatus}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-start gap-3">
+                  <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium">{dullyConfig.lastWebhook}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {integration.lastWebhookAt
+                        ? formatDate(integration.lastWebhookAt)
+                        : dullyConfig.neverReceived}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Activity className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium">{dullyConfig.webhookCount}</p>
+                    <p className="text-sm text-muted-foreground">{integration.webhookCount ?? 0}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {/* Benefits Sidebar */}
-      <div>
+      {/* Sidebar */}
+      <div className="space-y-6">
+        {/* Setup Instructions (Dully only) */}
+        {isDully && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Opsætningsvejledning</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ol className="space-y-3 list-decimal list-inside">
+                {dullyConfig.setupInstructions.map((instruction, index) => (
+                  <li key={index} className="text-sm text-muted-foreground">
+                    {instruction}
+                  </li>
+                ))}
+              </ol>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Benefits */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Fordele</CardTitle>

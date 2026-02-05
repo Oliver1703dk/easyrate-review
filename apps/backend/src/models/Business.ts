@@ -16,6 +16,9 @@ const integrationConfigSchema = new Schema<IntegrationConfig>(
     webhookSecret: { type: String },
     enabled: { type: Boolean, default: false },
     settings: { type: Schema.Types.Mixed, default: {} },
+    connectedAt: { type: Date },
+    lastWebhookAt: { type: Date },
+    webhookCount: { type: Number, default: 0 },
   },
   { _id: false }
 );

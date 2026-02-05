@@ -9,10 +9,12 @@ export interface QueuedOrder {
   orderId: string;
   platform: 'dully' | 'easytable';
   orderData: OrderData;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
   scheduledFor: Date;
   processedAt?: Date;
   errorMessage?: string;
+  cancelledAt?: Date;
+  cancelReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -83,11 +85,7 @@ export class OrderQueueService {
   }
 
   async markProcessing(id: string): Promise<QueuedOrder> {
-    const item = await OrderQueue.findByIdAndUpdate(
-      id,
-      { status: 'processing' },
-      { new: true }
-    );
+    const item = await OrderQueue.findByIdAndUpdate(id, { status: 'processing' }, { new: true });
 
     if (!item) {
       throw new NotFoundError(`Queue item ${id} not found`);
@@ -126,7 +124,7 @@ export class OrderQueueService {
     return toQueuedOrder(item);
   }
 
-  async retryFailed(id: string, delayMinutes: number = 60): Promise<QueuedOrder> {
+  async retryFailed(id: string, delayMinutes = 60): Promise<QueuedOrder> {
     const scheduledFor = new Date(Date.now() + delayMinutes * 60 * 1000);
 
     const item = await OrderQueue.findByIdAndUpdate(
@@ -144,8 +142,44 @@ export class OrderQueueService {
       throw new NotFoundError(`Queue item ${id} not found`);
     }
 
-    console.log(`[OrderQueueService] Retrying order ${item.orderId}, scheduled for ${scheduledFor.toISOString()}`);
+    console.log(
+      `[OrderQueueService] Retrying order ${item.orderId}, scheduled for ${scheduledFor.toISOString()}`
+    );
     return toQueuedOrder(item);
+  }
+
+  async cancelByOrderId(
+    businessId: string,
+    orderId: string,
+    platform: 'dully' | 'easytable',
+    reason?: string
+  ): Promise<QueuedOrder | null> {
+    const item = await OrderQueue.findOneAndUpdate(
+      {
+        businessId,
+        orderId,
+        platform,
+        status: 'pending',
+      },
+      {
+        status: 'cancelled',
+        cancelledAt: new Date(),
+        cancelReason: reason,
+      },
+      { new: true }
+    );
+
+    if (item) {
+      console.log(
+        `[OrderQueueService] Cancelled order ${orderId} for business ${businessId}${reason ? `: ${reason}` : ''}`
+      );
+      return toQueuedOrder(item);
+    }
+
+    console.log(
+      `[OrderQueueService] No pending order found to cancel: ${orderId} for business ${businessId}`
+    );
+    return null;
   }
 
   async getPendingCount(businessId: string): Promise<number> {
@@ -157,8 +191,17 @@ export class OrderQueueService {
     processing: number;
     completed: number;
     failed: number;
+    cancelled: number;
   }> {
-    const [result] = await OrderQueue.aggregate([
+    const stats = {
+      pending: 0,
+      processing: 0,
+      completed: 0,
+      failed: 0,
+      cancelled: 0,
+    };
+
+    const grouped = await OrderQueue.aggregate([
       { $match: { businessId: new mongoose.Types.ObjectId(businessId) } },
       {
         $group: {
@@ -168,29 +211,10 @@ export class OrderQueueService {
       },
     ]);
 
-    const stats = {
-      pending: 0,
-      processing: 0,
-      completed: 0,
-      failed: 0,
-    };
-
-    if (result) {
-      const grouped = await OrderQueue.aggregate([
-        { $match: { businessId: new mongoose.Types.ObjectId(businessId) } },
-        {
-          $group: {
-            _id: '$status',
-            count: { $sum: 1 },
-          },
-        },
-      ]);
-
-      for (const item of grouped) {
-        const status = item._id as keyof typeof stats;
-        if (status in stats) {
-          stats[status] = item.count;
-        }
+    for (const item of grouped) {
+      const status = item._id as keyof typeof stats;
+      if (status in stats) {
+        stats[status] = item.count;
       }
     }
 
@@ -202,7 +226,7 @@ export class OrderQueueService {
     return item ? toQueuedOrder(item) : null;
   }
 
-  async deleteOldCompleted(olderThanDays: number = 30): Promise<number> {
+  async deleteOldCompleted(olderThanDays = 30): Promise<number> {
     const cutoffDate = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
 
     const result = await OrderQueue.deleteMany({
