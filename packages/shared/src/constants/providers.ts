@@ -24,17 +24,17 @@ export const GSM7_BASIC_CHARS = new Set([
   // Punctuation and symbols
   ...`@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&'()*+,-./:;<=>?¡¿`,
   // Danish lowercase special chars (GSM-7 compatible)
-  'æ', 'ø', 'å',
+  'æ',
+  'ø',
+  'å',
 ]);
 
 // GSM-7 extended character set (count as 2 characters)
-export const GSM7_EXTENDED_CHARS = new Set([
-  '|', '^', '€', '{', '}', '[', ']', '~', '\\',
-]);
+export const GSM7_EXTENDED_CHARS = new Set(['|', '^', '€', '{', '}', '[', ']', '~', '\\']);
 
 export const PROVIDER_NAMES = {
   GATEWAY_API: 'gatewayapi',
   SENDGRID: 'sendgrid',
 } as const;
 
-export type ProviderName = typeof PROVIDER_NAMES[keyof typeof PROVIDER_NAMES];
+export type ProviderName = (typeof PROVIDER_NAMES)[keyof typeof PROVIDER_NAMES];

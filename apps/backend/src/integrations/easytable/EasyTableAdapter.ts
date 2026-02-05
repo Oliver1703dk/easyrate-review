@@ -12,9 +12,15 @@ export class EasyTableAdapter extends BaseAdapter {
       throw new Error('EasyTable integration requires apiKey');
     }
 
+    const placeToken = config.settings?.placeToken as string | undefined;
+    if (!placeToken) {
+      throw new Error('EasyTable integration requires placeToken (X-Place-Token)');
+    }
+
     const baseUrl = config.settings?.baseUrl as string | undefined;
     this.client = new EasyTableClient({
       apiKey: config.apiKey,
+      placeToken,
       baseUrl,
     });
 
@@ -47,32 +53,56 @@ export class EasyTableAdapter extends BaseAdapter {
     return this.client;
   }
 
+  /**
+   * Transform EasyTable booking to OrderData
+   * Maps API v2 fields to our internal format
+   */
   transformBooking(booking: EasyTableBooking): OrderData {
-    // Combine date and time to create orderDate
-    const bookingDateTime = new Date(`${booking.bookingDate}T${booking.bookingTime}`);
+    // Combine date and arrival time to create orderDate
+    // API returns date as "YYYY-MM-DD" and arrival as "HH:MM"
+    const bookingDateTime = new Date(`${booking.date}T${booking.arrival}:00`);
+
+    // Calculate completion time based on booking duration
+    const completedAt = new Date(bookingDateTime);
+    completedAt.setMinutes(completedAt.getMinutes() + booking.duration);
 
     const orderData: OrderData = {
-      orderId: booking.bookingId,
-      customerName: booking.guestName,
+      orderId: booking.bookingID.toString(),
       orderDate: bookingDateTime,
-      completedAt: booking.completedAt ? new Date(booking.completedAt) : new Date(),
+      completedAt,
       platform: 'easytable',
       metadata: {
-        partySize: booking.partySize,
-        restaurantId: booking.restaurantId,
-        bookingStatus: booking.status,
+        partySize: booking.persons,
+        children: booking.children,
+        customerID: booking.customerID,
+        externalID: booking.externalID,
+        tables: booking.tables,
+        tags: booking.tags,
+        note: booking.note,
+        guestNote: booking.guestNote,
       },
     };
 
-    if (booking.guestEmail) orderData.customerEmail = booking.guestEmail;
-    if (booking.guestPhone) orderData.customerPhone = booking.guestPhone;
+    if (booking.name) {
+      orderData.customerName = booking.name;
+    }
+    if (booking.email) {
+      orderData.customerEmail = booking.email;
+    }
+    if (booking.mobile) {
+      orderData.customerPhone = booking.mobile.toString();
+    }
 
     return orderData;
   }
 
+  /**
+   * Check if a booking should be processed for review request
+   * Only process bookings where the guest has arrived (completed visit)
+   */
   shouldProcess(booking: EasyTableBooking): boolean {
-    // Only process completed bookings
-    return booking.status === 'completed';
+    // Only process active bookings where guest has arrived
+    return booking.status === '1' && booking.arrived === 1;
   }
 
   async fetchCompletedBookings(since: Date): Promise<OrderData[]> {
@@ -83,8 +113,10 @@ export class EasyTableAdapter extends BaseAdapter {
     }
 
     try {
-      const bookings = await this.client.getAllCompletedBookings(since);
-      this.log(`Fetched ${bookings.length} completed bookings since ${since.toISOString()}`);
+      const bookings = await this.client.getCompletedBookings(since);
+      this.log(
+        `Fetched ${String(bookings.length)} completed bookings since ${since.toISOString()}`
+      );
 
       const orderDataList: OrderData[] = [];
 

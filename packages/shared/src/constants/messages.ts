@@ -260,8 +260,10 @@ export const DASHBOARD_TEXT = {
       enabled: 'Aktiveret',
       // Info text
       triggerDescription: 'Ordrer fra dine integrationer starter automatisk dette flow.',
-      branchExplanation: 'Anmeldelser med 1-3 stjerner sendes til intern feedback. Anmeldelser med 4-5 stjerner sendes til ekstern anmeldelse.',
-      internalDescription: 'Kunder med negative oplevelser kan give privat feedback direkte til dig.',
+      branchExplanation:
+        'Anmeldelser med 1-3 stjerner sendes til intern feedback. Anmeldelser med 4-5 stjerner sendes til ekstern anmeldelse.',
+      internalDescription:
+        'Kunder med negative oplevelser kan give privat feedback direkte til dig.',
       externalDescription: 'Tilfredse kunder opfordres til at dele deres oplevelse på Google.',
       thankYouDescription: 'Alle kunder ser denne side efter at have givet feedback.',
       selectNode: 'Klik på en node for at se detaljer',
@@ -452,7 +454,8 @@ export const DASHBOARD_TEXT = {
     },
     googleBusiness: {
       title: 'Google Business Integration',
-      description: 'Forbind din Google Business Profile for at hente og svare på Google anmeldelser.',
+      description:
+        'Forbind din Google Business Profile for at hente og svare på Google anmeldelser.',
       notConfigured: 'Google OAuth er ikke konfigureret. Kontakt support.',
       connectButton: 'Forbind Google',
       disconnectButton: 'Afbryd Google',
@@ -471,7 +474,8 @@ export const DASHBOARD_TEXT = {
       replyEnabledDescription: 'Svar på Google anmeldelser direkte fra EasyRate.',
       replyWarning: 'OBS: Google svar kan ikke redigeres efter afsendelse.',
       attributionEnabled: 'Automatisk kobling',
-      attributionEnabledDescription: 'Forsøg automatisk at matche Google anmeldelser med interne anmeldelser.',
+      attributionEnabledDescription:
+        'Forsøg automatisk at matche Google anmeldelser med interne anmeldelser.',
       lastSync: 'Sidst synkroniseret',
       nextSync: 'Næste synkronisering',
       syncNow: 'Synkroniser nu',

@@ -1,5 +1,5 @@
 import type { OrderData } from '@easyrate/shared';
-import { Business, type BusinessDocument } from '../../models/Business.js';
+import { Business } from '../../models/Business.js';
 import { EasyTableAdapter } from './EasyTableAdapter.js';
 
 export interface PollerConfig {
@@ -14,9 +14,9 @@ interface BusinessPollState {
 
 export class EasyTablePoller {
   private intervalMs: number;
-  private pollStates: Map<string, BusinessPollState> = new Map();
+  private pollStates = new Map<string, BusinessPollState>();
   private intervalId: ReturnType<typeof setInterval> | null = null;
-  private isRunning: boolean = false;
+  private isRunning = false;
   private orderHandler: ((businessId: string, order: OrderData) => Promise<void>) | null = null;
 
   constructor(config: PollerConfig = { intervalMs: 5 * 60 * 1000 }) {
@@ -34,7 +34,7 @@ export class EasyTablePoller {
     }
 
     this.isRunning = true;
-    console.log(`[EasyTablePoller] Starting with ${this.intervalMs}ms interval`);
+    console.log(`[EasyTablePoller] Starting with ${String(this.intervalMs)}ms interval`);
 
     // Initialize adapters for all enabled businesses
     await this.initializeAdapters();
@@ -44,7 +44,7 @@ export class EasyTablePoller {
 
     // Set up interval for subsequent polls
     this.intervalId = setInterval(() => {
-      this.poll().catch((error) => {
+      this.poll().catch((error: unknown) => {
         console.error('[EasyTablePoller] Poll error:', error);
       });
     }, this.intervalMs);
@@ -67,7 +67,10 @@ export class EasyTablePoller {
       try {
         await state.adapter.disconnect();
       } catch (error) {
-        console.error(`[EasyTablePoller] Error disconnecting adapter for ${state.businessId}:`, error);
+        console.error(
+          `[EasyTablePoller] Error disconnecting adapter for ${state.businessId}:`,
+          error
+        );
       }
     }
 
@@ -83,7 +86,7 @@ export class EasyTablePoller {
       const businesses = await Business.find({
         'integrations.platform': 'easytable',
         'integrations.enabled': true,
-      }) as BusinessDocument[];
+      });
 
       for (const business of businesses) {
         const integration = business.integrations.find(
@@ -91,17 +94,36 @@ export class EasyTablePoller {
         );
 
         if (integration?.apiKey) {
-          await this.addBusiness(business._id.toString(), integration.apiKey);
+          const placeToken = integration.settings?.placeToken as string | undefined;
+          if (placeToken) {
+            await this.addBusiness(
+              business._id.toString(),
+              integration.apiKey,
+              placeToken,
+              integration.settings
+            );
+          } else {
+            console.warn(
+              `[EasyTablePoller] Business ${String(business._id)} missing placeToken, skipping`
+            );
+          }
         }
       }
 
-      console.log(`[EasyTablePoller] Initialized ${this.pollStates.size} business adapters`);
+      console.log(
+        `[EasyTablePoller] Initialized ${String(this.pollStates.size)} business adapters`
+      );
     } catch (error) {
       console.error('[EasyTablePoller] Failed to initialize adapters:', error);
     }
   }
 
-  async addBusiness(businessId: string, apiKey: string): Promise<void> {
+  async addBusiness(
+    businessId: string,
+    apiKey: string,
+    placeToken: string,
+    settings?: Record<string, unknown>
+  ): Promise<void> {
     if (this.pollStates.has(businessId)) {
       console.log(`[EasyTablePoller] Business ${businessId} already registered, updating`);
       await this.removeBusiness(businessId);
@@ -112,11 +134,16 @@ export class EasyTablePoller {
       platform: 'easytable',
       apiKey,
       enabled: true,
+      settings: {
+        ...settings,
+        placeToken,
+      },
     });
 
     if (this.orderHandler) {
+      const handler = this.orderHandler;
       adapter.onOrderComplete(async (order) => {
-        await this.orderHandler!(businessId, order);
+        await handler(businessId, order);
       });
     }
 
@@ -145,18 +172,24 @@ export class EasyTablePoller {
 
   async refreshBusinessConfig(businessId: string): Promise<void> {
     try {
-      const business = await Business.findById(businessId) as BusinessDocument | null;
+      const business = await Business.findById(businessId);
       if (!business) {
         await this.removeBusiness(businessId);
         return;
       }
 
-      const integration = business.integrations.find(
-        (i) => i.platform === 'easytable'
-      );
+      const integration = business.integrations.find((i) => i.platform === 'easytable');
 
       if (integration?.enabled && integration.apiKey) {
-        await this.addBusiness(businessId, integration.apiKey);
+        const placeToken = integration.settings?.placeToken as string | undefined;
+        if (placeToken) {
+          await this.addBusiness(businessId, integration.apiKey, placeToken, integration.settings);
+        } else {
+          console.warn(
+            `[EasyTablePoller] Business ${businessId} missing placeToken, removing from poller`
+          );
+          await this.removeBusiness(businessId);
+        }
       } else {
         await this.removeBusiness(businessId);
       }
@@ -170,7 +203,7 @@ export class EasyTablePoller {
       return;
     }
 
-    console.log(`[EasyTablePoller] Polling ${this.pollStates.size} businesses`);
+    console.log(`[EasyTablePoller] Polling ${String(this.pollStates.size)} businesses`);
 
     for (const state of this.pollStates.values()) {
       try {
@@ -186,7 +219,9 @@ export class EasyTablePoller {
 
     try {
       const orders = await adapter.fetchCompletedBookings(lastPollAt);
-      console.log(`[EasyTablePoller] Business ${businessId}: fetched ${orders.length} new orders`);
+      console.log(
+        `[EasyTablePoller] Business ${businessId}: fetched ${String(orders.length)} new orders`
+      );
 
       // Update last poll time
       state.lastPollAt = new Date();
@@ -195,7 +230,9 @@ export class EasyTablePoller {
 
       // Check if it's an auth error and the integration might need to be disabled
       if (error instanceof Error && error.message.includes('401')) {
-        console.warn(`[EasyTablePoller] Auth error for business ${businessId}, credentials may be invalid`);
+        console.warn(
+          `[EasyTablePoller] Auth error for business ${businessId}, credentials may be invalid`
+        );
       }
     }
   }
@@ -203,7 +240,7 @@ export class EasyTablePoller {
   getStatus(): {
     isRunning: boolean;
     businessCount: number;
-    businesses: Array<{ businessId: string; lastPollAt: Date }>;
+    businesses: { businessId: string; lastPollAt: Date }[];
   } {
     return {
       isRunning: this.isRunning,
