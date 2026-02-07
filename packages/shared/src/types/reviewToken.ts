@@ -15,6 +15,6 @@ export interface ReviewTokenPayload {
   businessId: string;
   customer?: ReviewTokenCustomer;
   orderId?: string;
-  sourcePlatform?: 'dully' | 'easytable' | 'direct';
+  sourcePlatform?: 'dully' | 'easytable' | 'direct' | 'test';
   notificationId?: string;
 }

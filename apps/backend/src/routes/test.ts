@@ -1,6 +1,13 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
 import { authenticateJwt } from '../middleware/auth.js';
+import { validateBody } from '../middleware/validate.js';
 import { reviewTokenService } from '../services/ReviewTokenService.js';
+import { notificationService } from '../services/NotificationService.js';
+import { templateService } from '../services/TemplateService.js';
+import { Business } from '../models/Business.js';
+import { NotFoundError } from '../utils/errors.js';
+import type { ReviewTokenCustomer } from '@easyrate/shared';
 import { sendSuccess } from '../utils/response.js';
 
 const router = Router();
@@ -11,6 +18,17 @@ const TEST_CUSTOMER = {
   phone: '+4512345678',
   name: 'Test Kunde',
 };
+
+// Schema for send-order endpoint
+const testOrderSchema = z
+  .object({
+    phone: z.string().optional(),
+    email: z.string().email().optional(),
+    customerName: z.string().optional(),
+  })
+  .refine((data) => data.phone || data.email, {
+    message: 'At least one contact method required',
+  });
 
 /**
  * POST /api/v1/test/review-link
@@ -34,6 +52,134 @@ router.post(
       const link = `${baseUrl}/r/${token}?isTest=true`;
 
       sendSuccess(res, { link });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/v1/test/send-order
+ * Send a test SMS/email notification to test the complete flow
+ */
+router.post(
+  '/send-order',
+  authenticateJwt,
+  validateBody(testOrderSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const businessId = req.user!.businessId;
+      const input = req.body as z.infer<typeof testOrderSchema>;
+
+      // Load business for templates
+      const business = await Business.findById(businessId);
+      if (!business) {
+        throw new NotFoundError('Business not found');
+      }
+
+      const notifications: Array<{
+        id: string;
+        type: 'sms' | 'email';
+        recipient: string;
+        reviewLink: string;
+      }> = [];
+      const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+      // Create SMS notification if phone provided
+      if (input.phone) {
+        const smsNotification = await notificationService.create(businessId, {
+          type: 'sms',
+          recipient: input.phone,
+          content: '', // Will be filled below
+          reviewLink: '',
+          orderId: `test-${Date.now()}`,
+        });
+
+        const smsCustomer: ReviewTokenCustomer = { phone: input.phone };
+        if (input.customerName) smsCustomer.name = input.customerName;
+
+        const smsToken = reviewTokenService.generateToken({
+          businessId,
+          customer: smsCustomer,
+          sourcePlatform: 'test',
+          notificationId: smsNotification.id,
+        });
+
+        const smsLink = `${baseUrl}/r/${smsToken}?isTest=true`;
+        const templateVars = {
+          businessName: business.name,
+          reviewLink: smsLink,
+        };
+        if (input.customerName) {
+          (templateVars as Record<string, string>).customerName = input.customerName;
+        }
+        const smsContent = templateService.renderSmsReviewRequest(templateVars);
+
+        await notificationService.updateContent(smsNotification.id, {
+          content: smsContent,
+          reviewLink: smsLink,
+        });
+
+        notifications.push({
+          id: smsNotification.id,
+          type: 'sms',
+          recipient: input.phone,
+          reviewLink: smsLink,
+        });
+      }
+
+      // Create email notification if email provided
+      if (input.email) {
+        const emailNotification = await notificationService.create(businessId, {
+          type: 'email',
+          recipient: input.email,
+          content: '',
+          reviewLink: '',
+          orderId: `test-${Date.now()}`,
+        });
+
+        const emailCustomer: ReviewTokenCustomer = { email: input.email };
+        if (input.customerName) emailCustomer.name = input.customerName;
+
+        const emailToken = reviewTokenService.generateToken({
+          businessId,
+          customer: emailCustomer,
+          sourcePlatform: 'test',
+          notificationId: emailNotification.id,
+        });
+
+        const emailLink = `${baseUrl}/r/${emailToken}?isTest=true`;
+        const emailTemplateVars = {
+          businessName: business.name,
+          reviewLink: emailLink,
+        };
+        if (input.customerName) {
+          (emailTemplateVars as Record<string, string>).customerName = input.customerName;
+        }
+        const { subject, body } = templateService.renderEmailReviewRequest(emailTemplateVars);
+
+        await notificationService.updateContent(emailNotification.id, {
+          content: body,
+          subject,
+          reviewLink: emailLink,
+        });
+
+        notifications.push({
+          id: emailNotification.id,
+          type: 'email',
+          recipient: input.email,
+          reviewLink: emailLink,
+        });
+      }
+
+      sendSuccess(res, {
+        notifications: notifications.map((n) => ({
+          id: n.id,
+          type: n.type,
+          recipient: n.recipient,
+        })),
+        reviewLink: notifications[0]?.reviewLink,
+      });
     } catch (error) {
       next(error);
     }

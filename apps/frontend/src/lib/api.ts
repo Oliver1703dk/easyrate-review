@@ -66,7 +66,7 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      const json = await response.json() as { success: boolean; data?: T; error?: ApiError };
+      const json = (await response.json()) as { success: boolean; data?: T; error?: ApiError };
 
       if (!response.ok) {
         throw new Error(json.error?.message ?? ERROR_MESSAGES.generic);
@@ -87,7 +87,11 @@ class ApiClient {
     return this.request<LandingPageResponse>(`/r/${token}`);
   }
 
-  async submitReview(token: string, data: SubmitReviewRequest, isTest?: boolean): Promise<SubmitReviewResponse> {
+  async submitReview(
+    token: string,
+    data: SubmitReviewRequest,
+    isTest?: boolean
+  ): Promise<SubmitReviewResponse> {
     const queryParams = isTest ? '?isTest=true' : '';
     return this.request<SubmitReviewResponse>(`/r/${token}${queryParams}`, {
       method: 'POST',
@@ -129,7 +133,9 @@ class ApiClient {
       if (params.pageSize) searchParams.set('pageSize', String(params.pageSize));
       if (params.rating) {
         const ratings = Array.isArray(params.rating) ? params.rating : [params.rating];
-        ratings.forEach((r) => searchParams.append('rating', String(r)));
+        ratings.forEach((r) => {
+          searchParams.append('rating', String(r));
+        });
       }
       if (params.sourcePlatform) searchParams.set('sourcePlatform', params.sourcePlatform);
       if (params.isPublic !== undefined) searchParams.set('isPublic', String(params.isPublic));
@@ -248,6 +254,30 @@ class ApiClient {
     return this.request<{ link: string }>('/test/review-link', {
       method: 'POST',
     });
+  }
+
+  async sendTestOrder(input: { phone?: string; email?: string; customerName?: string }): Promise<{
+    notifications: { id: string; type: string; recipient: string }[];
+    reviewLink?: string;
+  }> {
+    return this.request('/test/send-order', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
+  async getNotificationBatchStatus(ids: string[]): Promise<{
+    notifications: {
+      id: string;
+      type: 'sms' | 'email';
+      status: string;
+      recipient: string;
+      sentAt?: string;
+      deliveredAt?: string;
+      errorMessage?: string;
+    }[];
+  }> {
+    return this.request(`/notifications/batch-status?ids=${ids.join(',')}`);
   }
 }
 

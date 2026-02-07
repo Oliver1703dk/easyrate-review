@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@easyrate/ui';
 import { DASHBOARD_TEXT } from '@easyrate/shared';
 import { Header } from '../../components/dashboard/layout';
-import { TestLinkCard } from '../../components/dashboard/test';
+import { TestLinkCard, TestOrderCard } from '../../components/dashboard/test';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function TestPage() {
@@ -26,8 +26,14 @@ export function TestPage() {
         <p className="mb-6 text-muted-foreground">{DASHBOARD_TEXT.test.subtitle}</p>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <TestLinkCard businessId={business.id} />
+          {/* New: Send real test messages */}
+          <TestOrderCard />
 
+          {/* Existing: Generate test link only */}
+          <TestLinkCard businessId={business.id} />
+        </div>
+
+        <div className="mt-6">
           <Card>
             <CardHeader>
               <CardTitle>{DASHBOARD_TEXT.test.instructionsTitle}</CardTitle>

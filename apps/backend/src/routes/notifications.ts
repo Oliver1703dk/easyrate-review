@@ -72,6 +72,36 @@ router.get(
   }
 );
 
+// GET /api/v1/notifications/batch-status - Get status for multiple notifications
+router.get(
+  '/batch-status',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const idsParam = req.query.ids;
+      if (typeof idsParam !== 'string' || !idsParam) {
+        res.status(400).json({ success: false, error: { message: 'ids query param required' } });
+        return;
+      }
+      const ids = idsParam.split(',').filter(Boolean);
+      const notifications = await notificationService.findByIds(req.businessId!, ids);
+
+      sendSuccess(res, {
+        notifications: notifications.map((n) => ({
+          id: n.id,
+          type: n.type,
+          status: n.status,
+          recipient: n.recipient,
+          sentAt: n.sentAt,
+          deliveredAt: n.deliveredAt,
+          errorMessage: n.errorMessage,
+        })),
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // GET /api/v1/notifications/:id - Get single notification
 router.get(
   '/:id',

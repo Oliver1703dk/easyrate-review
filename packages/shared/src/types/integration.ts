@@ -6,7 +6,7 @@ export interface OrderData {
   orderTotal?: number;
   orderDate: Date;
   completedAt?: Date;
-  platform: 'dully' | 'easytable';
+  platform: 'dully' | 'easytable' | 'test';
   metadata?: Record<string, unknown>;
 }
 

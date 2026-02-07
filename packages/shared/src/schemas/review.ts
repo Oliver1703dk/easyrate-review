@@ -19,7 +19,7 @@ export const createReviewSchema = z.object({
   rating: reviewRatingSchema,
   feedbackText: z.string().max(5000).optional(),
   customer: reviewCustomerSchema.optional(),
-  sourcePlatform: z.enum(['dully', 'easytable', 'direct']),
+  sourcePlatform: z.enum(['dully', 'easytable', 'direct', 'test']),
   orderId: z.string().optional(),
   photos: z.array(z.string().url()).max(5).optional(),
 });
@@ -27,7 +27,7 @@ export const createReviewSchema = z.object({
 export const reviewFiltersSchema = z.object({
   businessId: z.string().min(1),
   rating: z.union([reviewRatingSchema, z.array(reviewRatingSchema)]).optional(),
-  sourcePlatform: z.enum(['dully', 'easytable', 'direct']).optional(),
+  sourcePlatform: z.enum(['dully', 'easytable', 'direct', 'test']).optional(),
   isPublic: z.boolean().optional(),
   fromDate: z.coerce.date().optional(),
   toDate: z.coerce.date().optional(),

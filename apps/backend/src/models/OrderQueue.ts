@@ -5,7 +5,7 @@ export interface OrderQueueDocument extends Document {
   _id: mongoose.Types.ObjectId;
   businessId: mongoose.Types.ObjectId;
   orderId: string;
-  platform: 'dully' | 'easytable';
+  platform: 'dully' | 'easytable' | 'test';
   orderData: OrderData;
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
   scheduledFor: Date;
@@ -29,7 +29,7 @@ const orderDataSchema = new Schema<OrderData>(
     platform: {
       type: String,
       required: true,
-      enum: ['dully', 'easytable'],
+      enum: ['dully', 'easytable', 'test'],
     },
     metadata: { type: Schema.Types.Mixed },
   },
@@ -51,7 +51,7 @@ const orderQueueSchema = new Schema<OrderQueueDocument>(
     platform: {
       type: String,
       required: true,
-      enum: ['dully', 'easytable'],
+      enum: ['dully', 'easytable', 'test'],
     },
     orderData: {
       type: orderDataSchema,

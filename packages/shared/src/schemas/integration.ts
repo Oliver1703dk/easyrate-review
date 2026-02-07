@@ -8,7 +8,7 @@ export const orderDataSchema = z.object({
   orderTotal: z.number().positive().optional(),
   orderDate: z.coerce.date(),
   completedAt: z.coerce.date().optional(),
-  platform: z.enum(['dully', 'easytable']),
+  platform: z.enum(['dully', 'easytable', 'test']),
   metadata: z.record(z.unknown()).optional(),
 });
 

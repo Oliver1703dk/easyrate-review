@@ -25,7 +25,7 @@ export interface Review {
   rating: ReviewRating;
   feedbackText?: string;
   customer: ReviewCustomer;
-  sourcePlatform: 'dully' | 'easytable' | 'direct';
+  sourcePlatform: 'dully' | 'easytable' | 'direct' | 'test';
   orderId?: string;
   photos?: string[];
   isPublic: boolean;
@@ -44,7 +44,7 @@ export interface CreateReviewInput {
   rating: ReviewRating;
   feedbackText?: string;
   customer?: ReviewCustomer;
-  sourcePlatform: 'dully' | 'easytable' | 'direct';
+  sourcePlatform: 'dully' | 'easytable' | 'direct' | 'test';
   orderId?: string;
   photos?: string[];
   consent?: ConsentRecord;

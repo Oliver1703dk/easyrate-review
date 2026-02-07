@@ -1,6 +1,7 @@
 export const INTEGRATION_DELAYS = {
   dully: 60, // 1 hour after pickup
   easytable: 120, // 2 hours after booking
+  test: 0, // Immediate for testing
 } as const;
 
 export const PAGINATION = {

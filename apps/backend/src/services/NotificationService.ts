@@ -228,11 +228,19 @@ export class NotificationService {
 
   async updateContent(
     id: string,
-    data: { content: string; reviewLink: string }
+    data: { content: string; reviewLink: string; subject?: string }
   ): Promise<NotificationType> {
+    const updateData: Record<string, string> = {
+      content: data.content,
+      reviewLink: data.reviewLink,
+    };
+    if (data.subject) {
+      updateData.subject = data.subject;
+    }
+
     const notification = await Notification.findByIdAndUpdate(
       id,
-      { content: data.content, reviewLink: data.reviewLink },
+      updateData,
       { new: true }
     );
 
@@ -241,6 +249,17 @@ export class NotificationService {
     }
 
     return toNotificationType(notification);
+  }
+
+  async findByIds(
+    businessId: string,
+    ids: string[]
+  ): Promise<NotificationType[]> {
+    const notifications = await Notification.find({
+      businessId,
+      _id: { $in: ids },
+    });
+    return notifications.map(toNotificationType);
   }
 }
 
