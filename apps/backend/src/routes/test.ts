@@ -1,10 +1,11 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import { z } from 'zod';
 import { authenticateJwt } from '../middleware/auth.js';
 import { validateBody } from '../middleware/validate.js';
 import { reviewTokenService } from '../services/ReviewTokenService.js';
 import { notificationService } from '../services/NotificationService.js';
-import { templateService } from '../services/TemplateService.js';
+import { templateService, type TemplateVariables } from '../services/TemplateService.js';
 import { Business } from '../models/Business.js';
 import { NotFoundError } from '../utils/errors.js';
 import type { ReviewTokenCustomer } from '@easyrate/shared';
@@ -26,7 +27,7 @@ const testOrderSchema = z
     email: z.string().email().optional(),
     customerName: z.string().optional(),
   })
-  .refine((data) => data.phone || data.email, {
+  .refine((data) => data.phone ?? data.email, {
     message: 'At least one contact method required',
   });
 
@@ -34,29 +35,25 @@ const testOrderSchema = z
  * POST /api/v1/test/review-link
  * Generate a JWT-based test review link for the authenticated business
  */
-router.post(
-  '/review-link',
-  authenticateJwt,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const businessId = req.user!.businessId;
+router.post('/review-link', authenticateJwt, (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const businessId = req.user?.businessId;
 
-      // Generate JWT token with test customer data
-      const token = reviewTokenService.generateToken({
-        businessId,
-        customer: TEST_CUSTOMER,
-        sourcePlatform: 'direct',
-      });
+    // Generate JWT token with test customer data
+    const token = reviewTokenService.generateToken({
+      businessId,
+      customer: TEST_CUSTOMER,
+      sourcePlatform: 'direct',
+    });
 
-      const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-      const link = `${baseUrl}/r/${token}?isTest=true`;
+    const baseUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
+    const link = `${baseUrl}/r/${token}?isTest=true`;
 
-      sendSuccess(res, { link });
-    } catch (error) {
-      next(error);
-    }
+    sendSuccess(res, { link });
+  } catch (error) {
+    next(error);
   }
-);
+});
 
 /**
  * POST /api/v1/test/send-order
@@ -68,7 +65,7 @@ router.post(
   validateBody(testOrderSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const businessId = req.user!.businessId;
+      const businessId = req.user?.businessId;
       const input = req.body as z.infer<typeof testOrderSchema>;
 
       // Load business for templates
@@ -77,13 +74,13 @@ router.post(
         throw new NotFoundError('Business not found');
       }
 
-      const notifications: Array<{
+      const notifications: {
         id: string;
         type: 'sms' | 'email';
         recipient: string;
         reviewLink: string;
-      }> = [];
-      const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      }[] = [];
+      const baseUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
 
       // Create SMS notification if phone provided
       if (input.phone) {
@@ -97,7 +94,7 @@ router.post(
         });
 
         const smsLink = `${baseUrl}/r/${smsToken}?isTest=true`;
-        const templateVars: Record<string, string> = {
+        const templateVars: TemplateVariables = {
           businessName: business.name,
           reviewLink: smsLink,
         };
@@ -111,7 +108,7 @@ router.post(
           recipient: input.phone,
           content: smsContent,
           reviewLink: smsLink,
-          orderId: `test-${Date.now()}`,
+          orderId: `test-${String(Date.now())}`,
         });
 
         notifications.push({
@@ -134,7 +131,7 @@ router.post(
         });
 
         const emailLink = `${baseUrl}/r/${emailToken}?isTest=true`;
-        const emailTemplateVars: Record<string, string> = {
+        const emailTemplateVars: TemplateVariables = {
           businessName: business.name,
           reviewLink: emailLink,
         };
@@ -149,7 +146,7 @@ router.post(
           content: body,
           subject,
           reviewLink: emailLink,
-          orderId: `test-${Date.now()}`,
+          orderId: `test-${String(Date.now())}`,
         });
 
         notifications.push({
