@@ -12,6 +12,8 @@ export const aiSettingsSchema = z.object({
 
 export const businessSettingsSchema = z.object({
   defaultDelayMinutes: z.number().int().min(0).max(1440),
+  smsDelayMinutes: z.number().int().min(0).max(1440).optional(),
+  emailDelayMinutes: z.number().int().min(0).max(1440).optional(),
   smsEnabled: z.boolean(),
   emailEnabled: z.boolean(),
   googleReviewUrl: optionalUrl,

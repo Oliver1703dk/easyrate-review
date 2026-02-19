@@ -21,7 +21,7 @@ A SaaS review management platform that automates customer feedback collection fo
 | Backend | Node.js, Express.js, TypeScript |
 | Database | MongoDB (Mongoose ODM) |
 | File Storage | AWS S3 |
-| SMS Provider | Gateway API |
+| SMS Provider | InMobile |
 | Email Provider | SendGrid |
 | Monorepo | pnpm workspaces, Turborepo |
 | Testing | Vitest, Supertest, React Testing Library |
@@ -82,7 +82,7 @@ easyrate_review/
 - pnpm 8+
 - MongoDB (local or Atlas)
 - AWS account (for S3)
-- Gateway API account (for SMS)
+- InMobile account (for SMS)
 - SendGrid account (for Email)
 
 ### Installation
@@ -125,10 +125,9 @@ S3_BUCKET_NAME=your-bucket-name
 S3_UPLOAD_URL_EXPIRY=300
 S3_DOWNLOAD_URL_EXPIRY=3600
 
-# SMS (Gateway API)
-SMS_PROVIDER=gatewayapi
-GATEWAY_API_KEY=your-gateway-api-key
-GATEWAY_API_SENDER_ID=EasyRate
+# SMS (InMobile)
+INMOBILE_API_KEY=your-inmobile-api-key
+INMOBILE_SENDER_ID=EasyRate
 
 # Email (SendGrid)
 EMAIL_PROVIDER=sendgrid
@@ -294,7 +293,7 @@ interface MessageProvider {
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/webhooks/dully` | POST | Dully order webhook |
-| `/webhooks/gatewayapi` | POST | SMS status updates |
+| `/webhooks/inmobile` | POST | SMS status updates |
 | `/webhooks/sendgrid` | POST | Email event updates |
 
 ## Data Models
@@ -372,7 +371,7 @@ AWS_SECRET_ACCESS_KEY=<secret>
 S3_BUCKET_NAME=easyrate-uploads-eu
 
 # Providers
-GATEWAY_API_KEY=<key>
+INMOBILE_API_KEY=<key>
 SENDGRID_API_KEY=<key>
 
 # Monitoring

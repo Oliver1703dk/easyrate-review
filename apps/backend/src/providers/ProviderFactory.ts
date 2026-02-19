@@ -1,5 +1,5 @@
 import type { SmsProvider, EmailProvider, AIProviderType } from '@easyrate/shared';
-import { GatewayApiProvider, type GatewayApiConfig } from './sms/GatewayApiProvider.js';
+import { InMobileProvider, type InMobileConfig } from './sms/InMobileProvider.js';
 import { SendGridProvider, type SendGridConfig } from './email/SendGridProvider.js';
 import { BaseAIProvider, createGrokProvider, createOpenAIProvider } from './ai/index.js';
 import { GoogleBusinessProvider } from './google/GoogleBusinessProvider.js';
@@ -26,12 +26,11 @@ export class ProviderFactory {
 
   /**
    * Get or create the SMS provider
-   * Currently supports Gateway API only
    */
   getSmsProvider(): SmsProvider {
     if (!this.smsProvider) {
-      const config = this.getGatewayApiConfig();
-      this.smsProvider = new GatewayApiProvider(config);
+      const config = this.getInMobileConfig();
+      this.smsProvider = new InMobileProvider(config);
     }
     return this.smsProvider;
   }
@@ -52,7 +51,7 @@ export class ProviderFactory {
    * Check if SMS provider is configured
    */
   isSmsConfigured(): boolean {
-    return Boolean(process.env.GATEWAYAPI_API_KEY);
+    return Boolean(process.env.INMOBILE_API_KEY);
   }
 
   /**
@@ -123,18 +122,19 @@ export class ProviderFactory {
   }
 
   /**
-   * Get Gateway API configuration from environment
+   * Get InMobile configuration from environment
    */
-  private getGatewayApiConfig(): GatewayApiConfig {
-    const apiKey = process.env.GATEWAYAPI_API_KEY;
+  private getInMobileConfig(): InMobileConfig {
+    const apiKey = process.env.INMOBILE_API_KEY;
     if (!apiKey) {
-      throw new Error('GATEWAYAPI_API_KEY environment variable is required');
+      throw new Error('INMOBILE_API_KEY environment variable is required');
     }
 
     return {
       apiKey,
-      senderId: process.env.GATEWAYAPI_SENDER_ID || 'EasyRate',
-      webhookSecret: process.env.GATEWAYAPI_WEBHOOK_SECRET,
+      senderId: process.env.INMOBILE_SENDER_ID || 'EasyRate',
+      webhookSecret: process.env.INMOBILE_WEBHOOK_SECRET,
+      statusCallbackUrl: process.env.INMOBILE_STATUS_CALLBACK_URL,
     };
   }
 

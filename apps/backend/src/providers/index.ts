@@ -13,9 +13,9 @@ export {
   isGoogleConfigured,
 } from './ProviderFactory.js';
 export {
-  GatewayApiProvider,
-  type GatewayApiConfig,
-} from './sms/GatewayApiProvider.js';
+  InMobileProvider,
+  type InMobileConfig,
+} from './sms/InMobileProvider.js';
 export {
   SendGridProvider,
   type SendGridConfig,

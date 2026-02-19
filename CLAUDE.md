@@ -18,7 +18,7 @@ EasyRate is a SaaS review management platform that automates customer feedback c
 - **Backend**: Node.js + TypeScript, Express.js, REST API + Webhooks
 - **Database**: MongoDB (multi-tenant with `business_id` scoping)
 - **File Storage**: AWS S3 (EU region: eu-central-1)
-- **SMS**: Gateway API (alphanumeric sender ID)
+- **SMS**: InMobile (alphanumeric sender ID)
 - **Email**: SendGrid or AWS SES
 - **Monorepo**: pnpm workspaces + Turborepo
 

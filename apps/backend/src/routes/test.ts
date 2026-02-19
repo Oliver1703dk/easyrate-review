@@ -87,14 +87,6 @@ router.post(
 
       // Create SMS notification if phone provided
       if (input.phone) {
-        const smsNotification = await notificationService.create(businessId, {
-          type: 'sms',
-          recipient: input.phone,
-          content: '', // Will be filled below
-          reviewLink: '',
-          orderId: `test-${Date.now()}`,
-        });
-
         const smsCustomer: ReviewTokenCustomer = { phone: input.phone };
         if (input.customerName) smsCustomer.name = input.customerName;
 
@@ -102,22 +94,24 @@ router.post(
           businessId,
           customer: smsCustomer,
           sourcePlatform: 'test',
-          notificationId: smsNotification.id,
         });
 
         const smsLink = `${baseUrl}/r/${smsToken}?isTest=true`;
-        const templateVars = {
+        const templateVars: Record<string, string> = {
           businessName: business.name,
           reviewLink: smsLink,
         };
         if (input.customerName) {
-          (templateVars as Record<string, string>).customerName = input.customerName;
+          templateVars.customerName = input.customerName;
         }
         const smsContent = templateService.renderSmsReviewRequest(templateVars);
 
-        await notificationService.updateContent(smsNotification.id, {
+        const smsNotification = await notificationService.create(businessId, {
+          type: 'sms',
+          recipient: input.phone,
           content: smsContent,
           reviewLink: smsLink,
+          orderId: `test-${Date.now()}`,
         });
 
         notifications.push({
@@ -130,14 +124,6 @@ router.post(
 
       // Create email notification if email provided
       if (input.email) {
-        const emailNotification = await notificationService.create(businessId, {
-          type: 'email',
-          recipient: input.email,
-          content: '',
-          reviewLink: '',
-          orderId: `test-${Date.now()}`,
-        });
-
         const emailCustomer: ReviewTokenCustomer = { email: input.email };
         if (input.customerName) emailCustomer.name = input.customerName;
 
@@ -145,23 +131,25 @@ router.post(
           businessId,
           customer: emailCustomer,
           sourcePlatform: 'test',
-          notificationId: emailNotification.id,
         });
 
         const emailLink = `${baseUrl}/r/${emailToken}?isTest=true`;
-        const emailTemplateVars = {
+        const emailTemplateVars: Record<string, string> = {
           businessName: business.name,
           reviewLink: emailLink,
         };
         if (input.customerName) {
-          (emailTemplateVars as Record<string, string>).customerName = input.customerName;
+          emailTemplateVars.customerName = input.customerName;
         }
         const { subject, body } = templateService.renderEmailReviewRequest(emailTemplateVars);
 
-        await notificationService.updateContent(emailNotification.id, {
+        const emailNotification = await notificationService.create(businessId, {
+          type: 'email',
+          recipient: input.email,
           content: body,
           subject,
           reviewLink: emailLink,
+          orderId: `test-${Date.now()}`,
         });
 
         notifications.push({

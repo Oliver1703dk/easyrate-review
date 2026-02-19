@@ -1,7 +1,7 @@
 // Provider rate limits and constants
 
 export const PROVIDER_RATE_LIMITS = {
-  gatewayapi: { maxRequests: 100, windowMs: 1000 },
+  inmobile: { maxRequests: 400, windowMs: 1000 },
   sendgrid: { maxRequests: 100, windowMs: 1000 },
 } as const;
 
@@ -33,7 +33,7 @@ export const GSM7_BASIC_CHARS = new Set([
 export const GSM7_EXTENDED_CHARS = new Set(['|', '^', '€', '{', '}', '[', ']', '~', '\\']);
 
 export const PROVIDER_NAMES = {
-  GATEWAY_API: 'gatewayapi',
+  INMOBILE: 'inmobile',
   SENDGRID: 'sendgrid',
 } as const;
 

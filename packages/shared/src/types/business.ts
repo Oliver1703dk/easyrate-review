@@ -3,6 +3,8 @@ import type { GoogleBusinessSettings } from './google.js';
 
 export interface BusinessSettings {
   defaultDelayMinutes: number;
+  smsDelayMinutes?: number;
+  emailDelayMinutes?: number;
   smsEnabled: boolean;
   emailEnabled: boolean;
   googleReviewUrl?: string;

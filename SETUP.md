@@ -88,20 +88,21 @@ JWT_EXPIRES_IN=7d
 FRONTEND_URL=http://localhost:3000
 ```
 
-### SMS Provider (Gateway API)
+### SMS Provider (InMobile)
 
 Required for sending SMS notifications.
 
 ```bash
-GATEWAYAPI_API_KEY=your-gateway-api-key
-GATEWAYAPI_SENDER_ID=EasyRate
-GATEWAYAPI_WEBHOOK_SECRET=your-webhook-secret  # Optional, for delivery status
+INMOBILE_API_KEY=your-inmobile-api-key
+INMOBILE_SENDER_ID=EasyRate
+INMOBILE_WEBHOOK_SECRET=your-webhook-secret          # Optional, for delivery status auth
+INMOBILE_STATUS_CALLBACK_URL=https://your-api-domain/api/v1/webhooks/inmobile/delivery  # Optional
 ```
 
 **Setup Steps:**
-1. Create account at [GatewayAPI.com](https://gatewayapi.com)
+1. Create account at [InMobile.com](https://www.inmobile.com)
 2. Generate API key in dashboard
-3. Configure webhook URL: `https://your-api-domain/api/v1/webhooks/gatewayapi`
+3. Configure `INMOBILE_STATUS_CALLBACK_URL` for delivery status webhooks
 
 ### Email Provider (SendGrid)
 
@@ -274,7 +275,7 @@ All queries are scoped by `businessId` at the service layer. No additional confi
 │         ┌───────────────────┼───────────────────┐              │
 │         ▼                   ▼                   ▼              │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
-│  │  Gateway API │    │   SendGrid   │    │    AWS S3    │      │
+│  │   InMobile   │    │   SendGrid   │    │    AWS S3    │      │
 │  │    (SMS)     │    │   (Email)    │    │  (Storage)   │      │
 │  └──────────────┘    └──────────────┘    └──────────────┘      │
 │                             │                                   │
@@ -293,7 +294,7 @@ All queries are scoped by `businessId` at the service layer. No additional confi
 | Service | Required | Purpose | Cost |
 |---------|----------|---------|------|
 | MongoDB | Yes | Database | Free tier available |
-| Gateway API | Yes* | SMS delivery | Pay per SMS |
+| InMobile | Yes* | SMS delivery | Pay per SMS |
 | SendGrid | Yes* | Email delivery | Free tier: 100/day |
 | AWS S3 | Yes | Photo storage | ~$0.023/GB |
 | Grok/OpenAI | No | AI features | Pay per token |
@@ -491,7 +492,7 @@ NODE_ENV=production
 MONGODB_URI=mongodb+srv://...
 JWT_SECRET=<secure-random-string>
 FRONTEND_URL=https://app.easyrate.app
-GATEWAYAPI_API_KEY=<your-key>
+INMOBILE_API_KEY=<your-key>
 SENDGRID_API_KEY=<your-key>
 SENDGRID_FROM_EMAIL=noreply@easyrate.app
 AWS_REGION=eu-central-1
@@ -600,9 +601,9 @@ aws s3 ls s3://easyrate-uploads-prod --region eu-central-1
 curl -X GET "https://api.sendgrid.com/v3/user/profile" \
   -H "Authorization: Bearer $SENDGRID_API_KEY"
 
-# Gateway API
-curl -X GET "https://gatewayapi.com/rest/me" \
-  -H "Authorization: Basic $(echo -n $GATEWAYAPI_API_KEY: | base64)"
+# InMobile
+curl -X GET "https://api.inmobile.com/v4/sms/outgoing/reports?limit=1" \
+  -H "Authorization: Basic $(echo -n :$INMOBILE_API_KEY | base64)"
 ```
 
 ### Monitoring Checklist
@@ -629,9 +630,9 @@ Error: MongoServerSelectionError
 - Ensure MongoDB service is running locally
 
 **SMS Not Sending:**
-- Verify `GATEWAYAPI_API_KEY` is valid
+- Verify `INMOBILE_API_KEY` is valid
 - Check phone number format (include country code: +45...)
-- Review Gateway API dashboard for errors
+- Review InMobile dashboard for errors
 
 **Email Not Sending:**
 - Verify `SENDGRID_API_KEY` has Mail Send permission
@@ -662,7 +663,7 @@ DEBUG=easyrate:* pnpm dev
 
 1. Check existing [GitHub Issues](https://github.com/your-repo/issues)
 2. Review error logs in Sentry
-3. Check service-specific dashboards (SendGrid, Gateway API, etc.)
+3. Check service-specific dashboards (SendGrid, InMobile, etc.)
 
 ---
 
@@ -688,6 +689,6 @@ Before going to production:
 - [CLAUDE.md](./CLAUDE.md) - Development guidelines and project overview
 - [API Documentation](./docs/api.md) - REST API reference
 - [Runbook](./docs/runbook.md) - Operations procedures
-- [Gateway API Docs](https://gatewayapi.com/docs/)
+- [InMobile API Docs](https://www.inmobile.com/docs/rest-api/v4)
 - [SendGrid Docs](https://docs.sendgrid.com/)
 - [MongoDB Atlas Docs](https://www.mongodb.com/docs/atlas/)

@@ -47,6 +47,8 @@ const aiSettingsSchema = new Schema(
 const businessSettingsSchema = new Schema(
   {
     defaultDelayMinutes: { type: Number, default: 60 },
+    smsDelayMinutes: { type: Number },
+    emailDelayMinutes: { type: Number },
     smsEnabled: { type: Boolean, default: true },
     emailEnabled: { type: Boolean, default: false },
     googleReviewUrl: { type: String },

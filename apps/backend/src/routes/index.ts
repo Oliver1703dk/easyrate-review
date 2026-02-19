@@ -12,6 +12,7 @@ import insightsRouter from './insights.js';
 import googleAuthRouter from './google-auth.js';
 import googleConfigRouter from './google-config.js';
 import externalReviewsRouter from './external-reviews.js';
+import internalRouter from './internal.js';
 
 const router = Router();
 
@@ -29,5 +30,6 @@ router.use('/insights', insightsRouter);
 router.use('/google/auth', googleAuthRouter);
 router.use('/google', googleConfigRouter);
 router.use('/external-reviews', externalReviewsRouter);
+router.use('/internal', internalRouter);
 
 export default router;

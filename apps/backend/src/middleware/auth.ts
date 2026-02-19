@@ -11,6 +11,7 @@ declare global {
     interface Request {
       user?: JwtPayload;
       businessId?: string;
+      isServiceToken?: boolean;
     }
   }
 }
@@ -27,6 +28,20 @@ export function authenticateJwt(
   }
 
   const token = authHeader.substring(7);
+
+  // Try service JWT secret first (for webapp-proxied requests)
+  const serviceSecret = process.env.REVIEW_SERVICE_JWT_SECRET;
+  if (serviceSecret) {
+    try {
+      const decoded = jwt.verify(token, serviceSecret) as JwtPayload;
+      req.user = decoded;
+      req.businessId = decoded.businessId;
+      req.isServiceToken = true;
+      return next();
+    } catch {
+      // Not a service token — fall through to regular JWT_SECRET
+    }
+  }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;

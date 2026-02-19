@@ -26,8 +26,7 @@
    - `MONGODB_URI` - MongoDB connection string
    - `JWT_SECRET` - JWT signing secret (min 32 chars)
    - `JWT_EXPIRES_IN` - Token expiration (e.g., "7d")
-   - `SMS_API_KEY` - Gateway API key
-   - `SMS_API_SECRET` - Gateway API secret
+   - `INMOBILE_API_KEY` - InMobile API key
    - `SMS_SENDER_ID` - Alphanumeric sender ID (e.g., "EasyRate")
    - `SENDGRID_API_KEY` - SendGrid API key
    - `EMAIL_FROM` - Sender email address
@@ -150,7 +149,7 @@ Content-Type: application/json
 **Symptoms:** Notifications stuck in "pending" status
 
 **Check:**
-1. Verify Gateway API credentials
+1. Verify InMobile API credentials
 2. Check SMS provider balance/quota
 3. Check notification processor logs:
    ```bash
