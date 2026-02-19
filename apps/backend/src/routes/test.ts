@@ -38,6 +38,10 @@ const testOrderSchema = z
 router.post('/review-link', authenticateJwt, (req: Request, res: Response, next: NextFunction) => {
   try {
     const businessId = req.user?.businessId;
+    if (!businessId) {
+      next(new Error('Unauthorized'));
+      return;
+    }
 
     // Generate JWT token with test customer data
     const token = reviewTokenService.generateToken({
@@ -66,6 +70,10 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const businessId = req.user?.businessId;
+      if (!businessId) {
+        next(new Error('Unauthorized'));
+        return;
+      }
       const input = req.body as z.infer<typeof testOrderSchema>;
 
       // Load business for templates

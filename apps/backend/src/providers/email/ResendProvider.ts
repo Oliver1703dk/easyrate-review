@@ -153,7 +153,7 @@ export class ResendProvider extends BaseProvider implements EmailProvider {
       reason?: string | undefined;
     } = {
       messageId: event.data.email_id,
-      email: event.data.to[0],
+      email: event.data.to[0] ?? '',
       event: event.type,
       timestamp: new Date(event.created_at),
     };
