@@ -46,12 +46,12 @@ pnpm dev
 
 ### System Requirements
 
-| Requirement | Version | Purpose |
-|-------------|---------|---------|
-| Node.js | >= 20.0.0 | Runtime |
-| pnpm | 9.15.0 | Package manager |
-| MongoDB | >= 7.0 | Database |
-| Git | Latest | Version control |
+| Requirement | Version   | Purpose         |
+| ----------- | --------- | --------------- |
+| Node.js     | >= 20.0.0 | Runtime         |
+| pnpm        | 9.15.0    | Package manager |
+| MongoDB     | >= 7.0    | Database        |
+| Git         | Latest    | Version control |
 
 ### Install pnpm
 
@@ -100,26 +100,29 @@ INMOBILE_STATUS_CALLBACK_URL=https://your-api-domain/api/v1/webhooks/inmobile/de
 ```
 
 **Setup Steps:**
+
 1. Create account at [InMobile.com](https://www.inmobile.com)
 2. Generate API key in dashboard
 3. Configure `INMOBILE_STATUS_CALLBACK_URL` for delivery status webhooks
 
-### Email Provider (SendGrid)
+### Email Provider (Resend)
 
 Required for sending email notifications.
 
 ```bash
-SENDGRID_API_KEY=SG.xxxxxxxxxxxxx
-SENDGRID_FROM_EMAIL=noreply@yourdomain.com
-SENDGRID_FROM_NAME=EasyRate
-SENDGRID_WEBHOOK_VERIFICATION_KEY=MFkwEwYH...  # Optional, for delivery status
+RESEND_API_KEY=re_xxxxxxxxxxxxx
+RESEND_FROM_EMAIL=noreply@yourdomain.com
+RESEND_FROM_NAME=EasyRate
+RESEND_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxx  # Optional, for delivery status verification
 ```
 
 **Setup Steps:**
-1. Create account at [SendGrid.com](https://sendgrid.com)
-2. Create API key with Mail Send permissions
-3. Verify sender email domain
-4. Configure webhook URL: `https://your-api-domain/api/v1/webhooks/sendgrid`
+
+1. Create account at [resend.com](https://resend.com)
+2. Add and verify your sending domain (DNS: SPF + DKIM records)
+3. Create API key in dashboard
+4. Configure webhook URL: `https://your-api-domain/api/v1/webhooks/resend/events`
+5. Copy the webhook signing secret for `RESEND_WEBHOOK_SECRET`
 
 ### AWS S3 (File Storage)
 
@@ -135,6 +138,7 @@ S3_DOWNLOAD_URL_EXPIRY=3600   # 1 hour
 ```
 
 **Setup Steps:**
+
 1. Create S3 bucket in eu-central-1 (Frankfurt) for GDPR compliance
 2. Create IAM user with S3 access
 3. Configure bucket CORS policy:
@@ -178,6 +182,7 @@ GOOGLE_REDIRECT_URI=http://localhost:3001/api/v1/google/auth/callback
 ```
 
 **Setup Steps:**
+
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
 2. Create a new project or select existing
 3. Enable "My Business Account Management API" and "My Business Business Information API"
@@ -205,6 +210,7 @@ REVIEW_TOKEN_EXPIRES_IN=60d
 ### Local Development
 
 **macOS (Homebrew):**
+
 ```bash
 brew tap mongodb/brew
 brew install mongodb-community@7.0
@@ -212,6 +218,7 @@ brew services start mongodb-community@7.0
 ```
 
 **Docker:**
+
 ```bash
 docker run -d \
   --name easyrate-mongo \
@@ -221,6 +228,7 @@ docker run -d \
 ```
 
 **Verify Connection:**
+
 ```bash
 mongosh --eval "db.adminCommand('ping')"
 ```
@@ -242,15 +250,15 @@ MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/easyrate?retryWr
 
 Indexes are automatically created on first connection. Key collections:
 
-| Collection | Purpose | Key Indexes |
-|------------|---------|-------------|
-| `businesses` | Tenant accounts | `email` (unique) |
-| `users` | User accounts | `email` (unique), `businessId` |
-| `reviews` | Customer feedback | `businessId + createdAt`, `businessId + rating` |
-| `notifications` | SMS/email tracking | `businessId + status`, `externalMessageId` |
-| `orderqueues` | Order processing queue | `status + scheduledFor` (unique compound) |
-| `externalreviews` | Google reviews | `businessId + sourcePlatform + externalId` (unique) |
-| `insightruns` | AI analysis results | `businessId + createdAt` |
+| Collection        | Purpose                | Key Indexes                                         |
+| ----------------- | ---------------------- | --------------------------------------------------- |
+| `businesses`      | Tenant accounts        | `email` (unique)                                    |
+| `users`           | User accounts          | `email` (unique), `businessId`                      |
+| `reviews`         | Customer feedback      | `businessId + createdAt`, `businessId + rating`     |
+| `notifications`   | SMS/email tracking     | `businessId + status`, `externalMessageId`          |
+| `orderqueues`     | Order processing queue | `status + scheduledFor` (unique compound)           |
+| `externalreviews` | Google reviews         | `businessId + sourcePlatform + externalId` (unique) |
+| `insightruns`     | AI analysis results    | `businessId + createdAt`                            |
 
 ### Multi-Tenancy
 
@@ -275,7 +283,7 @@ All queries are scoped by `businessId` at the service layer. No additional confi
 │         ┌───────────────────┼───────────────────┐              │
 │         ▼                   ▼                   ▼              │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
-│  │   InMobile   │    │   SendGrid   │    │    AWS S3    │      │
+│  │   InMobile   │    │    Resend    │    │    AWS S3    │      │
 │  │    (SMS)     │    │   (Email)    │    │  (Storage)   │      │
 │  └──────────────┘    └──────────────┘    └──────────────┘      │
 │                             │                                   │
@@ -291,17 +299,17 @@ All queries are scoped by `businessId` at the service layer. No additional confi
 
 ### Service Checklist
 
-| Service | Required | Purpose | Cost |
-|---------|----------|---------|------|
-| MongoDB | Yes | Database | Free tier available |
-| InMobile | Yes* | SMS delivery | Pay per SMS |
-| SendGrid | Yes* | Email delivery | Free tier: 100/day |
-| AWS S3 | Yes | Photo storage | ~$0.023/GB |
-| Grok/OpenAI | No | AI features | Pay per token |
-| Google Business | No | Review sync | Free |
-| Sentry | No | Error monitoring | Free tier available |
+| Service         | Required | Purpose          | Cost                   |
+| --------------- | -------- | ---------------- | ---------------------- |
+| MongoDB         | Yes      | Database         | Free tier available    |
+| InMobile        | Yes\*    | SMS delivery     | Pay per SMS            |
+| Resend          | Yes\*    | Email delivery   | Free tier: 3,000/month |
+| AWS S3          | Yes      | Photo storage    | ~$0.023/GB             |
+| Grok/OpenAI     | No       | AI features      | Pay per token          |
+| Google Business | No       | Review sync      | Free                   |
+| Sentry          | No       | Error monitoring | Free tier available    |
 
-*At least one messaging provider required
+\*At least one messaging provider required
 
 ---
 
@@ -312,20 +320,24 @@ All queries are scoped by `businessId` at the service layer. No additional confi
 Dully sends webhooks when orders are completed.
 
 **Configuration in EasyRate Dashboard:**
+
 1. Go to Settings → Integrations → Dully
 2. Copy the webhook URL shown
 3. Add to your Dully admin panel
 
 **Webhook URL Format:**
+
 ```
 POST https://your-api-domain/api/v1/webhooks/dully/{businessId}
 ```
 
 **Security:**
+
 - Configure `DULLY_WEBHOOK_SECRET` for HMAC-SHA256 signature verification
 - Webhook payloads are validated with 5-minute timestamp tolerance
 
 **Trigger Events:**
+
 - `order.picked_up` - Order collected by customer
 - `order.approved` - Order approved for processing
 
@@ -336,15 +348,18 @@ POST https://your-api-domain/api/v1/webhooks/dully/{businessId}
 EasyTable uses REST API polling for completed bookings.
 
 **Configuration in EasyRate Dashboard:**
+
 1. Go to Settings → Integrations → EasyTable
 2. Enter your API Key and Place Token
 3. Test the connection
 
 **Required Credentials:**
+
 - API Key (from EasyTable admin)
 - Place Token (location-specific)
 
 **Polling Behavior:**
+
 - Fetches completed bookings where guest has arrived
 - Respects rate limits (3 requests/second)
 - Tracks last sync timestamp to avoid duplicates
@@ -377,6 +392,7 @@ nano apps/backend/.env
 ```
 
 **Minimum for development:**
+
 ```bash
 PORT=3001
 NODE_ENV=development
@@ -396,6 +412,7 @@ pnpm dev
 ```
 
 This starts:
+
 - Frontend: http://localhost:3000 (Vite dev server with HMR)
 - Backend: http://localhost:3001 (Express with tsx watch)
 
@@ -415,14 +432,14 @@ curl http://localhost:3001/health
 
 ### Available Scripts
 
-| Command | Purpose |
-|---------|---------|
-| `pnpm dev` | Start all services in development mode |
-| `pnpm build` | Build all packages for production |
-| `pnpm test` | Run all tests |
-| `pnpm lint` | Run ESLint on all packages |
-| `pnpm typecheck` | Run TypeScript type checking |
-| `pnpm format` | Format code with Prettier |
+| Command          | Purpose                                |
+| ---------------- | -------------------------------------- |
+| `pnpm dev`       | Start all services in development mode |
+| `pnpm build`     | Build all packages for production      |
+| `pnpm test`      | Run all tests                          |
+| `pnpm lint`      | Run ESLint on all packages             |
+| `pnpm typecheck` | Run TypeScript type checking           |
+| `pnpm format`    | Format code with Prettier              |
 
 ---
 
@@ -430,20 +447,22 @@ curl http://localhost:3001/health
 
 ### Architecture Overview
 
-| Component | Platform | URL |
-|-----------|----------|-----|
-| Frontend | Vercel | app.easyrate.app |
-| Backend | Railway | api.easyrate.app |
-| Database | MongoDB Atlas | cluster.mongodb.net |
-| Storage | AWS S3 | s3.eu-central-1.amazonaws.com |
+| Component | Platform      | URL                           |
+| --------- | ------------- | ----------------------------- |
+| Frontend  | Vercel        | app.easyrate.app              |
+| Backend   | Railway       | api.easyrate.app              |
+| Database  | MongoDB Atlas | cluster.mongodb.net           |
+| Storage   | AWS S3        | s3.eu-central-1.amazonaws.com |
 
 ### Frontend Deployment (Vercel)
 
 **Automatic Deployment:**
+
 - Pushes to `main` branch trigger automatic deployment
 - PR previews are generated automatically
 
 **Manual Deployment:**
+
 ```bash
 # Install Vercel CLI
 pnpm add -g vercel
@@ -454,6 +473,7 @@ vercel --prod
 ```
 
 **Configuration (`apps/frontend/vercel.json`):**
+
 - SPA routing enabled (all routes → index.html)
 - Security headers configured
 - Build command uses monorepo filter
@@ -461,10 +481,12 @@ vercel --prod
 ### Backend Deployment (Railway)
 
 **Automatic Deployment:**
+
 - Pushes to `main` branch trigger automatic deployment
 - Health checks verify deployment success
 
 **Manual Deployment:**
+
 ```bash
 # Install Railway CLI
 brew install railway
@@ -475,6 +497,7 @@ railway up --service backend
 ```
 
 **Configuration (`apps/backend/railway.toml`):**
+
 - NIXPACKS builder auto-detects Node.js
 - Health check endpoint: `/health`
 - Auto-restart on failure (max 10 retries)
@@ -484,17 +507,19 @@ railway up --service backend
 Set these in your deployment platform:
 
 **Vercel (Frontend):**
+
 - No environment variables needed (uses API proxy)
 
 **Railway (Backend):**
+
 ```bash
 NODE_ENV=production
 MONGODB_URI=mongodb+srv://...
 JWT_SECRET=<secure-random-string>
 FRONTEND_URL=https://app.easyrate.app
 INMOBILE_API_KEY=<your-key>
-SENDGRID_API_KEY=<your-key>
-SENDGRID_FROM_EMAIL=noreply@easyrate.app
+RESEND_API_KEY=<your-key>
+RESEND_FROM_EMAIL=noreply@easyrate.app
 AWS_REGION=eu-central-1
 AWS_ACCESS_KEY_ID=<your-key>
 AWS_SECRET_ACCESS_KEY=<your-secret>
@@ -507,10 +532,10 @@ SENTRY_DSN=<your-dsn>
 
 ### DNS Configuration
 
-| Domain | Type | Target |
-|--------|------|--------|
+| Domain           | Type  | Target               |
+| ---------------- | ----- | -------------------- |
 | app.easyrate.app | CNAME | cname.vercel-dns.com |
-| api.easyrate.app | CNAME | <railway-domain> |
+| api.easyrate.app | CNAME | <railway-domain>     |
 
 ---
 
@@ -536,28 +561,31 @@ Push to main
 ```
 
 **PR Preview (`/.github/workflows/preview.yml`):**
+
 - Triggers on pull requests
 - Deploys frontend preview to Vercel
 - Comments preview URL on PR
 
 ### Required GitHub Secrets
 
-| Secret | Purpose |
-|--------|---------|
-| `RAILWAY_TOKEN` | Railway deployment authentication |
-| `VERCEL_TOKEN` | Vercel deployment authentication |
-| `VERCEL_ORG_ID` | Vercel organization identifier |
-| `VERCEL_PROJECT_ID` | Vercel project identifier |
+| Secret              | Purpose                           |
+| ------------------- | --------------------------------- |
+| `RAILWAY_TOKEN`     | Railway deployment authentication |
+| `VERCEL_TOKEN`      | Vercel deployment authentication  |
+| `VERCEL_ORG_ID`     | Vercel organization identifier    |
+| `VERCEL_PROJECT_ID` | Vercel project identifier         |
 
 ### Setting Up CI/CD
 
 1. **Railway Token:**
+
    ```bash
    railway login
    railway whoami  # Get token from ~/.railway/config.json
    ```
 
 2. **Vercel Tokens:**
+
    ```bash
    vercel login
    vercel link  # Links project and shows IDs
@@ -579,6 +607,7 @@ curl https://api.easyrate.app/health
 ```
 
 **Response:**
+
 ```json
 {
   "status": "healthy",
@@ -597,9 +626,9 @@ mongosh "mongodb+srv://..." --eval "db.adminCommand('ping')"
 # S3 bucket access
 aws s3 ls s3://easyrate-uploads-prod --region eu-central-1
 
-# SendGrid API
-curl -X GET "https://api.sendgrid.com/v3/user/profile" \
-  -H "Authorization: Bearer $SENDGRID_API_KEY"
+# Resend API
+curl -X GET "https://api.resend.com/domains" \
+  -H "Authorization: Bearer $RESEND_API_KEY"
 
 # InMobile
 curl -X GET "https://api.inmobile.com/v4/sms/outgoing/reports?limit=1" \
@@ -622,32 +651,39 @@ curl -X GET "https://api.inmobile.com/v4/sms/outgoing/reports?limit=1" \
 ### Common Issues
 
 **Database Connection Failed:**
+
 ```
 Error: MongoServerSelectionError
 ```
+
 - Check `MONGODB_URI` is correct
 - Verify IP whitelist in MongoDB Atlas
 - Ensure MongoDB service is running locally
 
 **SMS Not Sending:**
+
 - Verify `INMOBILE_API_KEY` is valid
 - Check phone number format (include country code: +45...)
 - Review InMobile dashboard for errors
 
 **Email Not Sending:**
-- Verify `SENDGRID_API_KEY` has Mail Send permission
-- Check sender email is verified
-- Review SendGrid Activity Feed for bounces
+
+- Verify `RESEND_API_KEY` is valid
+- Check sending domain is verified in Resend dashboard
+- Review Resend logs for bounces/failures
 
 **S3 Upload Failed:**
+
 ```
 Error: AccessDenied
 ```
+
 - Verify IAM credentials have S3 access
 - Check bucket CORS configuration
 - Ensure bucket region matches `AWS_REGION`
 
 **Google OAuth Error:**
+
 - Verify redirect URI matches exactly
 - Check API is enabled in Google Cloud Console
 - Ensure OAuth consent screen is configured
@@ -655,6 +691,7 @@ Error: AccessDenied
 ### Debug Mode
 
 Enable verbose logging:
+
 ```bash
 DEBUG=easyrate:* pnpm dev
 ```
@@ -663,7 +700,7 @@ DEBUG=easyrate:* pnpm dev
 
 1. Check existing [GitHub Issues](https://github.com/your-repo/issues)
 2. Review error logs in Sentry
-3. Check service-specific dashboards (SendGrid, InMobile, etc.)
+3. Check service-specific dashboards (Resend, InMobile, etc.)
 
 ---
 
@@ -690,5 +727,5 @@ Before going to production:
 - [API Documentation](./docs/api.md) - REST API reference
 - [Runbook](./docs/runbook.md) - Operations procedures
 - [InMobile API Docs](https://www.inmobile.com/docs/rest-api/v4)
-- [SendGrid Docs](https://docs.sendgrid.com/)
+- [Resend Docs](https://resend.com/docs)
 - [MongoDB Atlas Docs](https://www.mongodb.com/docs/atlas/)

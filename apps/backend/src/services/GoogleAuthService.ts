@@ -7,14 +7,12 @@ const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
 // Google Business Profile API scope for reading/replying to reviews
-const GOOGLE_SCOPES = [
-  'https://www.googleapis.com/auth/business.manage',
-].join(' ');
+const GOOGLE_SCOPES = ['https://www.googleapis.com/auth/business.manage'].join(' ');
 
 // Token encryption - use a consistent key derived from JWT_SECRET
 const ENCRYPTION_KEY = crypto
   .createHash('sha256')
-  .update(process.env.JWT_SECRET || 'development-secret')
+  .update(process.env.JWT_SECRET ?? 'development-secret')
   .digest();
 const IV_LENGTH = 16;
 
@@ -27,9 +25,11 @@ function encrypt(text: string): string {
 }
 
 function decrypt(text: string): string {
-  const parts = text.split(':');
-  const iv = Buffer.from(parts[0]!, 'hex');
-  const encryptedText = parts[1]!;
+  const [ivHex, encryptedText] = text.split(':');
+  if (!ivHex || !encryptedText) {
+    throw new Error('Invalid encrypted text format');
+  }
+  const iv = Buffer.from(ivHex, 'hex');
   const decipher = crypto.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
   let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
   decrypted += decipher.final('utf8');
@@ -48,24 +48,36 @@ export class GoogleAuthService {
   private redirectUri: string;
 
   constructor() {
-    this.clientId = process.env.GOOGLE_CLIENT_ID || '';
-    this.clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+    this.clientId = '';
+    this.clientSecret = '';
+    this.redirectUri = '';
+  }
+
+  /**
+   * Load credentials from env (called lazily since dotenv may not have run at import time)
+   */
+  private loadConfig(): void {
+    this.clientId = process.env.GOOGLE_CLIENT_ID ?? '';
+    this.clientSecret = process.env.GOOGLE_CLIENT_SECRET ?? '';
     this.redirectUri =
-      process.env.GOOGLE_REDIRECT_URI ||
-      'http://localhost:3001/api/v1/google/auth/callback';
+      process.env.GOOGLE_REDIRECT_URI ?? 'http://localhost:3001/api/v1/google/auth/callback';
   }
 
   /**
    * Check if Google OAuth is configured
    */
   isConfigured(): boolean {
+    this.loadConfig();
     return Boolean(this.clientId && this.clientSecret);
   }
 
   /**
    * Generate OAuth authorization URL with state for CSRF protection
    */
-  getAuthorizationUrl(businessId: string, frontendRedirectUri?: string): { url: string; state: string } {
+  getAuthorizationUrl(
+    businessId: string,
+    frontendRedirectUri?: string
+  ): { url: string; state: string } {
     if (!this.isConfigured()) {
       throw new ValidationError('Google OAuth er ikke konfigureret');
     }
@@ -74,7 +86,7 @@ export class GoogleAuthService {
     const state: GoogleAuthState = {
       businessId,
       nonce,
-      redirectUri: frontendRedirectUri || '/dashboard/settings',
+      redirectUri: frontendRedirectUri ?? '/dashboard/settings',
     };
     const stateString = Buffer.from(JSON.stringify(state)).toString('base64url');
 
@@ -99,9 +111,7 @@ export class GoogleAuthService {
    */
   parseState(stateString: string): GoogleAuthState {
     try {
-      const state = JSON.parse(
-        Buffer.from(stateString, 'base64url').toString()
-      ) as GoogleAuthState;
+      const state = JSON.parse(Buffer.from(stateString, 'base64url').toString()) as GoogleAuthState;
 
       if (!state.businessId || !state.nonce) {
         throw new ValidationError('Ugyldig OAuth state');
@@ -166,10 +176,7 @@ export class GoogleAuthService {
   /**
    * Store OAuth tokens in business settings (encrypted)
    */
-  private async storeTokens(
-    businessId: string,
-    tokens: GoogleTokenResponse
-  ): Promise<void> {
+  private async storeTokens(businessId: string, tokens: GoogleTokenResponse): Promise<void> {
     const business = await Business.findById(businessId);
     if (!business) {
       throw new NotFoundError('Virksomhed ikke fundet');
@@ -191,7 +198,7 @@ export class GoogleAuthService {
     }
 
     // Preserve existing settings if present
-    const existingSettings = business.settings?.googleBusiness;
+    const existingSettings = business.settings.googleBusiness;
     if (existingSettings) {
       if (existingSettings.accountId) {
         googleSettings.accountId = existingSettings.accountId;
@@ -224,7 +231,7 @@ export class GoogleAuthService {
       throw new NotFoundError('Virksomhed ikke fundet');
     }
 
-    const googleSettings = business.settings?.googleBusiness;
+    const googleSettings = business.settings.googleBusiness;
     if (!googleSettings?.refreshToken) {
       throw new UnauthorizedError('Ingen Google-forbindelse. Log ind igen.');
     }
@@ -294,7 +301,7 @@ export class GoogleAuthService {
       throw new NotFoundError('Virksomhed ikke fundet');
     }
 
-    const googleSettings = business.settings?.googleBusiness;
+    const googleSettings = business.settings.googleBusiness;
     if (!googleSettings?.enabled || !googleSettings.accessToken) {
       throw new UnauthorizedError('Google er ikke forbundet');
     }
@@ -321,7 +328,7 @@ export class GoogleAuthService {
       throw new NotFoundError('Virksomhed ikke fundet');
     }
 
-    const googleSettings = business.settings?.googleBusiness;
+    const googleSettings = business.settings.googleBusiness;
 
     // Try to revoke the token at Google (best effort)
     if (googleSettings?.accessToken) {
@@ -367,7 +374,7 @@ export class GoogleAuthService {
       throw new NotFoundError('Virksomhed ikke fundet');
     }
 
-    const googleSettings = business.settings?.googleBusiness;
+    const googleSettings = business.settings.googleBusiness;
     if (!googleSettings?.enabled || !googleSettings.accessToken) {
       return { connected: false, syncEnabled: false };
     }

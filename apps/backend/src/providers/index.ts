@@ -12,15 +12,12 @@ export {
   getGoogleProvider,
   isGoogleConfigured,
 } from './ProviderFactory.js';
+export { InMobileProvider, type InMobileConfig } from './sms/InMobileProvider.js';
 export {
-  InMobileProvider,
-  type InMobileConfig,
-} from './sms/InMobileProvider.js';
-export {
-  SendGridProvider,
-  type SendGridConfig,
-  type SendGridWebhookEvent,
-} from './email/SendGridProvider.js';
+  ResendProvider,
+  type ResendConfig,
+  type ResendWebhookEvent,
+} from './email/ResendProvider.js';
 
 // AI Providers
 export {

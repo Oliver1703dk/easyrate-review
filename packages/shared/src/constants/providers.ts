@@ -2,7 +2,7 @@
 
 export const PROVIDER_RATE_LIMITS = {
   inmobile: { maxRequests: 400, windowMs: 1000 },
-  sendgrid: { maxRequests: 100, windowMs: 1000 },
+  resend: { maxRequests: 10, windowMs: 1000 },
 } as const;
 
 export const SMS_ENCODING = {
@@ -16,13 +16,13 @@ export const SMS_ENCODING = {
 // Includes lowercase Danish æ, ø, å but NOT uppercase Æ, Ø, Å
 export const GSM7_BASIC_CHARS = new Set([
   // Basic Latin letters
-  ...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
+  ...Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'),
   // Digits
-  ...'0123456789',
+  ...Array.from('0123456789'),
   // Space
   ' ',
   // Punctuation and symbols
-  ...`@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&'()*+,-./:;<=>?¡¿`,
+  ...Array.from(`@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&'()*+,-./:;<=>?¡¿`),
   // Danish lowercase special chars (GSM-7 compatible)
   'æ',
   'ø',
@@ -34,7 +34,7 @@ export const GSM7_EXTENDED_CHARS = new Set(['|', '^', '€', '{', '}', '[', ']',
 
 export const PROVIDER_NAMES = {
   INMOBILE: 'inmobile',
-  SENDGRID: 'sendgrid',
+  RESEND: 'resend',
 } as const;
 
 export type ProviderName = (typeof PROVIDER_NAMES)[keyof typeof PROVIDER_NAMES];

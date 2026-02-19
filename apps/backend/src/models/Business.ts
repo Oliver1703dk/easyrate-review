@@ -1,4 +1,5 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import type { Document, Model } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import type { Business as BusinessType, IntegrationConfig } from '@easyrate/shared';
 
 export interface BusinessDocument extends Omit<BusinessType, 'id'>, Document {
@@ -44,6 +45,24 @@ const aiSettingsSchema = new Schema(
   { _id: false }
 );
 
+const googleBusinessSettingsSchema = new Schema(
+  {
+    enabled: { type: Boolean, default: false },
+    accountId: { type: String },
+    locationIds: { type: [String] },
+    accessToken: { type: String },
+    refreshToken: { type: String },
+    tokenExpiresAt: { type: Date },
+    syncEnabled: { type: Boolean, default: false },
+    syncIntervalHours: { type: Number, default: 2 },
+    lastSyncAt: { type: Date },
+    lastSyncStatus: { type: String },
+    replyEnabled: { type: Boolean, default: false },
+    attributionEnabled: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
+
 const businessSettingsSchema = new Schema(
   {
     defaultDelayMinutes: { type: Number, default: 60 },
@@ -56,6 +75,7 @@ const businessSettingsSchema = new Schema(
     logoUrl: { type: String },
     gdpr: { type: gdprSettingsSchema, default: () => ({}) },
     aiSettings: { type: aiSettingsSchema, default: () => ({}) },
+    googleBusiness: { type: googleBusinessSettingsSchema },
   },
   { _id: false }
 );

@@ -1,7 +1,8 @@
 import type { SmsProvider, EmailProvider, AIProviderType } from '@easyrate/shared';
 import { InMobileProvider, type InMobileConfig } from './sms/InMobileProvider.js';
-import { SendGridProvider, type SendGridConfig } from './email/SendGridProvider.js';
-import { BaseAIProvider, createGrokProvider, createOpenAIProvider } from './ai/index.js';
+import { ResendProvider, type ResendConfig } from './email/ResendProvider.js';
+import type { BaseAIProvider } from './ai/index.js';
+import { createGrokProvider, createOpenAIProvider } from './ai/index.js';
 import { GoogleBusinessProvider } from './google/GoogleBusinessProvider.js';
 
 /**
@@ -9,18 +10,17 @@ import { GoogleBusinessProvider } from './google/GoogleBusinessProvider.js';
  * Extensible for future providers (Twilio, AWS SES, etc.)
  */
 export class ProviderFactory {
-  private static instance: ProviderFactory;
+  private static instance: ProviderFactory | undefined;
   private smsProvider: SmsProvider | null = null;
   private emailProvider: EmailProvider | null = null;
   private aiProvider: BaseAIProvider | null = null;
   private googleProvider: GoogleBusinessProvider | null = null;
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   private constructor() {}
 
   static getInstance(): ProviderFactory {
-    if (!ProviderFactory.instance) {
-      ProviderFactory.instance = new ProviderFactory();
-    }
+    ProviderFactory.instance ??= new ProviderFactory();
     return ProviderFactory.instance;
   }
 
@@ -37,12 +37,11 @@ export class ProviderFactory {
 
   /**
    * Get or create the email provider
-   * Currently supports SendGrid only
    */
   getEmailProvider(): EmailProvider {
     if (!this.emailProvider) {
-      const config = this.getSendGridConfig();
-      this.emailProvider = new SendGridProvider(config);
+      const config = this.getResendConfig();
+      this.emailProvider = new ResendProvider(config);
     }
     return this.emailProvider;
   }
@@ -58,7 +57,7 @@ export class ProviderFactory {
    * Check if email provider is configured
    */
   isEmailConfigured(): boolean {
-    return Boolean(process.env.SENDGRID_API_KEY);
+    return Boolean(process.env.RESEND_API_KEY);
   }
 
   /**
@@ -78,7 +77,7 @@ export class ProviderFactory {
         this.aiProvider = createGrokProvider();
       } else {
         // Default: try Grok first, then OpenAI
-        this.aiProvider = createGrokProvider() || createOpenAIProvider();
+        this.aiProvider = createGrokProvider() ?? createOpenAIProvider();
       }
 
       if (!this.aiProvider) {
@@ -92,16 +91,14 @@ export class ProviderFactory {
    * Check if any AI provider is configured
    */
   isAIConfigured(): boolean {
-    return Boolean(process.env.GROK_API_KEY || process.env.OPENAI_API_KEY);
+    return Boolean(process.env.GROK_API_KEY ?? process.env.OPENAI_API_KEY);
   }
 
   /**
    * Get or create the Google Business provider
    */
   getGoogleProvider(): GoogleBusinessProvider {
-    if (!this.googleProvider) {
-      this.googleProvider = new GoogleBusinessProvider();
-    }
+    this.googleProvider ??= new GoogleBusinessProvider();
     return this.googleProvider;
   }
 
@@ -132,31 +129,31 @@ export class ProviderFactory {
 
     return {
       apiKey,
-      senderId: process.env.INMOBILE_SENDER_ID || 'EasyRate',
+      senderId: process.env.INMOBILE_SENDER_ID ?? 'EasyRate',
       webhookSecret: process.env.INMOBILE_WEBHOOK_SECRET,
       statusCallbackUrl: process.env.INMOBILE_STATUS_CALLBACK_URL,
     };
   }
 
   /**
-   * Get SendGrid configuration from environment
+   * Get Resend configuration from environment
    */
-  private getSendGridConfig(): SendGridConfig {
-    const apiKey = process.env.SENDGRID_API_KEY;
+  private getResendConfig(): ResendConfig {
+    const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
-      throw new Error('SENDGRID_API_KEY environment variable is required');
+      throw new Error('RESEND_API_KEY environment variable is required');
     }
 
-    const fromEmail = process.env.SENDGRID_FROM_EMAIL;
+    const fromEmail = process.env.RESEND_FROM_EMAIL;
     if (!fromEmail) {
-      throw new Error('SENDGRID_FROM_EMAIL environment variable is required');
+      throw new Error('RESEND_FROM_EMAIL environment variable is required');
     }
 
     return {
       apiKey,
       fromEmail,
-      fromName: process.env.SENDGRID_FROM_NAME || 'EasyRate',
-      webhookVerificationKey: process.env.SENDGRID_WEBHOOK_VERIFICATION_KEY,
+      fromName: process.env.RESEND_FROM_NAME ?? 'EasyRate',
+      webhookSecret: process.env.RESEND_WEBHOOK_SECRET,
     };
   }
 

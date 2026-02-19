@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import dullyRouter from './dully.js';
 import inmobileRouter from './inmobile.js';
-import sendgridRouter from './sendgrid.js';
+import resendRouter from './resend.js';
 
 const router = Router();
 
@@ -11,6 +11,6 @@ router.use('/dully', dullyRouter);
 
 // Mount provider webhook routes
 router.use('/inmobile', inmobileRouter);
-router.use('/sendgrid', sendgridRouter);
+router.use('/resend', resendRouter);
 
 export default router;

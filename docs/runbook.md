@@ -10,6 +10,7 @@
    - Health check at `/health` verifies deployment success
 
 2. **Manual Deployment**
+
    ```bash
    # Install Railway CLI
    npm install -g @railway/cli
@@ -28,9 +29,9 @@
    - `JWT_EXPIRES_IN` - Token expiration (e.g., "7d")
    - `INMOBILE_API_KEY` - InMobile API key
    - `SMS_SENDER_ID` - Alphanumeric sender ID (e.g., "EasyRate")
-   - `SENDGRID_API_KEY` - SendGrid API key
-   - `EMAIL_FROM` - Sender email address
-   - `EMAIL_FROM_NAME` - Sender name
+   - `RESEND_API_KEY` - Resend API key
+   - `RESEND_FROM_EMAIL` - Sender email address
+   - `RESEND_FROM_NAME` - Sender name
    - `AWS_REGION` - AWS region (eu-central-1)
    - `AWS_ACCESS_KEY_ID` - AWS access key
    - `AWS_SECRET_ACCESS_KEY` - AWS secret key
@@ -45,6 +46,7 @@
    - Pull requests create preview deployments
 
 2. **Manual Deployment**
+
    ```bash
    vercel --prod
    ```
@@ -91,6 +93,7 @@ vercel promote <deployment-url>
 7. Send to customer within 30 days
 
 **API Method:**
+
 ```bash
 POST /api/v1/gdpr/export
 Authorization: Bearer <admin-token>
@@ -111,6 +114,7 @@ Content-Type: application/json
 6. Notify customer of completion
 
 **API Method:**
+
 ```bash
 POST /api/v1/gdpr/delete
 Authorization: Bearer <admin-token>
@@ -122,6 +126,7 @@ Content-Type: application/json
 ```
 
 **Note:** Deletion removes:
+
 - All reviews submitted by the customer
 - All notification records
 - Any uploaded photos
@@ -135,6 +140,7 @@ Content-Type: application/json
 **Symptoms:** Health check returns non-200 or "degraded" status
 
 **Check:**
+
 1. Database connection
    ```bash
    curl https://api.easyrate.app/health
@@ -149,6 +155,7 @@ Content-Type: application/json
 **Symptoms:** Notifications stuck in "pending" status
 
 **Check:**
+
 1. Verify InMobile API credentials
 2. Check SMS provider balance/quota
 3. Check notification processor logs:
@@ -162,9 +169,10 @@ Content-Type: application/json
 **Symptoms:** Emails not arriving
 
 **Check:**
-1. Verify SendGrid API key
-2. Check SendGrid dashboard for bounces/blocks
-3. Verify sender domain is authenticated
+
+1. Verify Resend API key
+2. Check Resend dashboard for bounces/failures
+3. Verify sending domain is verified (SPF + DKIM)
 4. Check spam folders
 
 ### High Error Rate
@@ -172,6 +180,7 @@ Content-Type: application/json
 **Symptoms:** Sentry alerts or increased 5xx errors
 
 **Check:**
+
 1. Review Sentry dashboard for error patterns
 2. Check recent deployments
 3. Review resource utilization on Railway
@@ -182,6 +191,7 @@ Content-Type: application/json
 **Symptoms:** Customers report submission errors
 
 **Check:**
+
 1. Verify business exists and is active
 2. Check consent checkbox in frontend
 3. Review error logs for validation failures
@@ -194,6 +204,7 @@ Content-Type: application/json
 ### Health Check Monitoring
 
 Configure uptime monitoring service (BetterUptime/UptimeRobot):
+
 - **URL:** `https://api.easyrate.app/health`
 - **Method:** GET
 - **Expected Status:** 200
@@ -223,6 +234,7 @@ Configure uptime monitoring service (BetterUptime/UptimeRobot):
 ### Database Cleanup
 
 Run periodically to remove old completed orders from queue:
+
 ```bash
 # Via API (requires admin auth)
 POST /api/v1/admin/cleanup
@@ -234,6 +246,7 @@ POST /api/v1/admin/cleanup
 ### Log Review
 
 Weekly review of:
+
 - Error patterns in Sentry
 - Failed notification statistics
 - Integration webhook failures
@@ -241,6 +254,7 @@ Weekly review of:
 ### Security Updates
 
 Monthly:
+
 - Run `pnpm audit` to check for vulnerabilities
 - Update dependencies: `pnpm update`
 - Review access logs for suspicious activity

@@ -15,16 +15,16 @@ A SaaS review management platform that automates customer feedback collection fo
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui |
-| Backend | Node.js, Express.js, TypeScript |
-| Database | MongoDB (Mongoose ODM) |
-| File Storage | AWS S3 |
-| SMS Provider | InMobile |
-| Email Provider | SendGrid |
-| Monorepo | pnpm workspaces, Turborepo |
-| Testing | Vitest, Supertest, React Testing Library |
+| Layer          | Technology                                          |
+| -------------- | --------------------------------------------------- |
+| Frontend       | React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui |
+| Backend        | Node.js, Express.js, TypeScript                     |
+| Database       | MongoDB (Mongoose ODM)                              |
+| File Storage   | AWS S3                                              |
+| SMS Provider   | InMobile                                            |
+| Email Provider | Resend                                              |
+| Monorepo       | pnpm workspaces, Turborepo                          |
+| Testing        | Vitest, Supertest, React Testing Library            |
 
 ## Project Structure
 
@@ -83,7 +83,7 @@ easyrate_review/
 - MongoDB (local or Atlas)
 - AWS account (for S3)
 - InMobile account (for SMS)
-- SendGrid account (for Email)
+- Resend account (for Email)
 
 ### Installation
 
@@ -129,11 +129,10 @@ S3_DOWNLOAD_URL_EXPIRY=3600
 INMOBILE_API_KEY=your-inmobile-api-key
 INMOBILE_SENDER_ID=EasyRate
 
-# Email (SendGrid)
-EMAIL_PROVIDER=sendgrid
-SENDGRID_API_KEY=your-sendgrid-api-key
-SENDGRID_FROM_EMAIL=noreply@yourdomain.com
-SENDGRID_FROM_NAME=EasyRate
+# Email (Resend)
+RESEND_API_KEY=your-resend-api-key
+RESEND_FROM_EMAIL=noreply@yourdomain.com
+RESEND_FROM_NAME=EasyRate
 
 # Error Tracking (optional)
 SENTRY_DSN=your-sentry-dsn
@@ -208,10 +207,10 @@ interface IntegrationAdapter {
 
 **Supported Integrations:**
 
-| Platform | Type | Trigger | Default Delay |
-|----------|------|---------|---------------|
-| Dully | Webhook | Order pickup | 1 hour |
-| EasyTable | REST API (polling) | Booking completion | 2 hours |
+| Platform  | Type               | Trigger            | Default Delay |
+| --------- | ------------------ | ------------------ | ------------- |
+| Dully     | Webhook            | Order pickup       | 1 hour        |
+| EasyTable | REST API (polling) | Booking completion | 2 hours       |
 
 ### Message Providers
 
@@ -226,10 +225,10 @@ interface MessageProvider {
 
 ### Background Jobs
 
-| Job | Interval | Purpose |
-|-----|----------|---------|
-| OrderQueueProcessor | 60 seconds | Process queued orders, create notifications |
-| NotificationProcessor | 10 seconds | Send pending notifications, handle retries |
+| Job                   | Interval   | Purpose                                     |
+| --------------------- | ---------- | ------------------------------------------- |
+| OrderQueueProcessor   | 60 seconds | Process queued orders, create notifications |
+| NotificationProcessor | 10 seconds | Send pending notifications, handle retries  |
 
 ## API Reference
 
@@ -237,23 +236,24 @@ interface MessageProvider {
 
 ### Authentication
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/auth/register` | POST | Register new business |
-| `/auth/login` | POST | Login |
-| `/auth/me` | GET | Get current user |
-| `/auth/refresh` | POST | Refresh JWT token |
+| Endpoint         | Method | Description           |
+| ---------------- | ------ | --------------------- |
+| `/auth/register` | POST   | Register new business |
+| `/auth/login`    | POST   | Login                 |
+| `/auth/me`       | GET    | Get current user      |
+| `/auth/refresh`  | POST   | Refresh JWT token     |
 
 ### Reviews (Protected)
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/reviews` | GET | List reviews with filters |
-| `/reviews/:id` | GET | Get single review |
-| `/reviews/stats` | GET | Get review statistics |
-| `/reviews/:id` | DELETE | Delete review |
+| Endpoint         | Method | Description               |
+| ---------------- | ------ | ------------------------- |
+| `/reviews`       | GET    | List reviews with filters |
+| `/reviews/:id`   | GET    | Get single review         |
+| `/reviews/stats` | GET    | Get review statistics     |
+| `/reviews/:id`   | DELETE | Delete review             |
 
 **Query Parameters for listing:**
+
 - `page`, `limit` - Pagination
 - `rating` - Filter by rating (1-5)
 - `sourcePlatform` - Filter by platform
@@ -262,39 +262,39 @@ interface MessageProvider {
 
 ### Business (Protected)
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/businesses/me` | GET | Get current business |
-| `/businesses/me` | PATCH | Update business |
-| `/businesses/me/settings` | GET/PATCH | Business settings |
-| `/businesses/me/integrations` | GET | List integrations |
-| `/businesses/me/integrations/:platform` | PATCH | Update integration |
-| `/businesses/me/integrations/:platform/test` | POST | Test connection |
+| Endpoint                                     | Method    | Description          |
+| -------------------------------------------- | --------- | -------------------- |
+| `/businesses/me`                             | GET       | Get current business |
+| `/businesses/me`                             | PATCH     | Update business      |
+| `/businesses/me/settings`                    | GET/PATCH | Business settings    |
+| `/businesses/me/integrations`                | GET       | List integrations    |
+| `/businesses/me/integrations/:platform`      | PATCH     | Update integration   |
+| `/businesses/me/integrations/:platform/test` | POST      | Test connection      |
 
 ### Public Review Submission
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/r/:token` | GET | Get landing page data |
-| `/r/:token` | POST | Submit review |
-| `/r/:token/upload-url` | POST | Get S3 presigned URL |
+| Endpoint               | Method | Description           |
+| ---------------------- | ------ | --------------------- |
+| `/r/:token`            | GET    | Get landing page data |
+| `/r/:token`            | POST   | Submit review         |
+| `/r/:token/upload-url` | POST   | Get S3 presigned URL  |
 
 ### GDPR
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/gdpr/export` | POST | Export business data |
-| `/gdpr/export/customer` | POST | Export customer data |
-| `/gdpr/customer` | DELETE | Delete customer data |
-| `/gdpr/account` | DELETE | Delete business account |
+| Endpoint                | Method | Description             |
+| ----------------------- | ------ | ----------------------- |
+| `/gdpr/export`          | POST   | Export business data    |
+| `/gdpr/export/customer` | POST   | Export customer data    |
+| `/gdpr/customer`        | DELETE | Delete customer data    |
+| `/gdpr/account`         | DELETE | Delete business account |
 
 ### Webhooks
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/webhooks/dully` | POST | Dully order webhook |
-| `/webhooks/inmobile` | POST | SMS status updates |
-| `/webhooks/sendgrid` | POST | Email event updates |
+| Endpoint             | Method | Description         |
+| -------------------- | ------ | ------------------- |
+| `/webhooks/dully`    | POST   | Dully order webhook |
+| `/webhooks/inmobile` | POST   | SMS status updates  |
+| `/webhooks/resend`   | POST   | Email event updates |
 
 ## Data Models
 
@@ -372,7 +372,7 @@ S3_BUCKET_NAME=easyrate-uploads-eu
 
 # Providers
 INMOBILE_API_KEY=<key>
-SENDGRID_API_KEY=<key>
+RESEND_API_KEY=<key>
 
 # Monitoring
 SENTRY_DSN=<dsn>
@@ -381,17 +381,20 @@ SENTRY_DSN=<dsn>
 ### Deployment Options
 
 **Frontend:**
+
 - Vercel (recommended)
 - Netlify
 - Any static hosting
 
 **Backend:**
+
 - Docker container
 - AWS ECS/EKS
 - Heroku
 - Railway
 
 **Database:**
+
 - MongoDB Atlas (recommended)
 
 ### Docker
@@ -424,6 +427,7 @@ pnpm run test -- --coverage
 ```
 
 **Test Structure:**
+
 ```
 apps/backend/tests/
 ├── services/        # Unit tests for services
@@ -433,6 +437,7 @@ apps/backend/tests/
 ```
 
 **Coverage Targets:**
+
 - Services: 80%
 - API routes: 70%
 
@@ -443,7 +448,7 @@ apps/backend/tests/
 - **Input Validation**: Zod schemas on all endpoints
 - **CORS**: Configured for frontend domain only
 - **Headers**: Helmet security headers
-- **Webhooks**: HMAC-SHA256 (Dully), ECDSA (SendGrid) signature verification
+- **Webhooks**: HMAC-SHA256 (Dully), svix/HMAC-SHA256 (Resend) signature verification
 - **File Uploads**: Type/size validation, S3 server-side encryption
 
 ## GDPR Compliance
@@ -473,6 +478,7 @@ pnpm run format
 ### Commit Hooks
 
 Pre-commit hooks via Husky run:
+
 - ESLint
 - Prettier
 - TypeScript check

@@ -1,5 +1,7 @@
-import { Notification, NotificationDocument } from '../models/Notification.js';
-import { Business, BusinessDocument } from '../models/Business.js';
+import type { NotificationDocument } from '../models/Notification.js';
+import { Notification } from '../models/Notification.js';
+import type { BusinessDocument } from '../models/Business.js';
+import { Business } from '../models/Business.js';
 import { notificationService } from '../services/NotificationService.js';
 import {
   getSmsProvider,
@@ -26,8 +28,8 @@ const DEFAULT_CONFIG: ProcessorConfig = {
 class NotificationProcessor {
   private config: ProcessorConfig;
   private intervalId: ReturnType<typeof setInterval> | null = null;
-  private isRunning: boolean = false;
-  private isProcessing: boolean = false;
+  private isRunning = false;
+  private isProcessing = false;
 
   constructor(config: Partial<ProcessorConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -40,28 +42,32 @@ class NotificationProcessor {
     }
 
     this.isRunning = true;
-    console.log(`[NotificationProcessor] Starting with ${this.config.intervalMs}ms interval`);
+    console.log(
+      `[NotificationProcessor] Starting with ${String(this.config.intervalMs)}ms interval`
+    );
 
     // Check if providers are configured
     if (!isSmsConfigured() && !isEmailConfigured()) {
-      console.warn('[NotificationProcessor] No message providers configured. Notifications will not be sent.');
+      console.warn(
+        '[NotificationProcessor] No message providers configured. Notifications will not be sent.'
+      );
     } else {
       if (isSmsConfigured()) {
         console.log('[NotificationProcessor] SMS provider (Gateway API) configured');
       }
       if (isEmailConfigured()) {
-        console.log('[NotificationProcessor] Email provider (SendGrid) configured');
+        console.log('[NotificationProcessor] Email provider (Resend) configured');
       }
     }
 
     // Run first processing immediately
-    this.processNotifications().catch((error) => {
+    this.processNotifications().catch((error: unknown) => {
       console.error('[NotificationProcessor] Initial process error:', error);
     });
 
     // Set up interval for subsequent processing
     this.intervalId = setInterval(() => {
-      this.processNotifications().catch((error) => {
+      this.processNotifications().catch((error: unknown) => {
         console.error('[NotificationProcessor] Process error:', error);
       });
     }, this.config.intervalMs);
@@ -94,10 +100,7 @@ class NotificationProcessor {
       const now = new Date();
       const pendingNotifications = await Notification.find({
         status: 'pending',
-        $or: [
-          { retryAt: null },
-          { retryAt: { $lte: now } },
-        ],
+        $or: [{ retryAt: null }, { retryAt: { $lte: now } }],
       })
         .sort({ createdAt: 1 })
         .limit(this.config.batchSize);
@@ -106,7 +109,9 @@ class NotificationProcessor {
         return;
       }
 
-      console.log(`[NotificationProcessor] Processing ${pendingNotifications.length} notifications`);
+      console.log(
+        `[NotificationProcessor] Processing ${String(pendingNotifications.length)} notifications`
+      );
 
       // Process each notification
       for (const notification of pendingNotifications) {
@@ -122,11 +127,11 @@ class NotificationProcessor {
 
     try {
       // Load business for fallback email
-      const business = await Business.findById(notification.businessId) as BusinessDocument | null;
+      const business = await Business.findById(notification.businessId);
 
       if (notification.type === 'sms') {
         await this.sendSms(notification, business);
-      } else if (notification.type === 'email') {
+      } else {
         await this.sendEmail(notification);
       }
     } catch (error) {
@@ -147,7 +152,9 @@ class NotificationProcessor {
     const notificationId = String(notification._id);
 
     if (!isSmsConfigured()) {
-      console.warn(`[NotificationProcessor] SMS provider not configured, skipping ${notificationId}`);
+      console.warn(
+        `[NotificationProcessor] SMS provider not configured, skipping ${notificationId}`
+      );
       await this.handleFailure(notification, 'SMS provider not configured');
       return;
     }
@@ -169,9 +176,13 @@ class NotificationProcessor {
         updateOptions.externalMessageId = result.messageId;
       }
       await notificationService.updateStatus(notificationId, 'sent', updateOptions);
-      console.log(`[NotificationProcessor] Sent SMS ${notificationId} (external: ${result.messageId})`);
+      console.log(
+        `[NotificationProcessor] Sent SMS ${notificationId} (external: ${result.messageId ?? ''})`
+      );
     } else {
-      console.error(`[NotificationProcessor] SMS send failed for ${notificationId}: ${result.error}`);
+      console.error(
+        `[NotificationProcessor] SMS send failed for ${notificationId}: ${result.error ?? ''}`
+      );
 
       // Attempt fallback to email if customer has email
       if (business && notification.orderId) {
@@ -180,13 +191,13 @@ class NotificationProcessor {
           console.log(`[NotificationProcessor] Created email fallback for ${notificationId}`);
           // Mark SMS as failed since we're falling back
           await notificationService.updateStatus(notificationId, 'failed', {
-            errorMessage: `${result.error} (email fallback created)`,
+            errorMessage: `${result.error ?? 'Unknown error'} (email fallback created)`,
           });
           return;
         }
       }
 
-      await this.handleFailure(notification, result.error || 'Unknown SMS error');
+      await this.handleFailure(notification, result.error ?? 'Unknown SMS error');
     }
   }
 
@@ -194,7 +205,9 @@ class NotificationProcessor {
     const notificationId = String(notification._id);
 
     if (!isEmailConfigured()) {
-      console.warn(`[NotificationProcessor] Email provider not configured, skipping ${notificationId}`);
+      console.warn(
+        `[NotificationProcessor] Email provider not configured, skipping ${notificationId}`
+      );
       await this.handleFailure(notification, 'Email provider not configured');
       return;
     }
@@ -220,10 +233,14 @@ class NotificationProcessor {
         updateOptions.externalMessageId = result.messageId;
       }
       await notificationService.updateStatus(notificationId, 'sent', updateOptions);
-      console.log(`[NotificationProcessor] Sent email ${notificationId} (external: ${result.messageId})`);
+      console.log(
+        `[NotificationProcessor] Sent email ${notificationId} (external: ${result.messageId ?? ''})`
+      );
     } else {
-      console.error(`[NotificationProcessor] Email send failed for ${notificationId}: ${result.error}`);
-      await this.handleFailure(notification, result.error || 'Unknown email error');
+      console.error(
+        `[NotificationProcessor] Email send failed for ${notificationId}: ${result.error ?? ''}`
+      );
+      await this.handleFailure(notification, result.error ?? 'Unknown email error');
     }
   }
 
@@ -245,7 +262,8 @@ class NotificationProcessor {
 
     // Create a fallback email notification
     const emailSubject = `Hvordan var din oplevelse hos ${business.name}?`;
-    const emailContent = business.messageTemplates.email ||
+    const emailContent =
+      business.messageTemplates.email ??
       `Tak for dit besøg hos ${business.name}! Vi vil meget gerne høre om din oplevelse. ${notification.reviewLink}`;
 
     const createInput: Parameters<typeof notificationService.create>[1] = {
@@ -270,20 +288,23 @@ class NotificationProcessor {
     errorMessage: string
   ): Promise<void> {
     const notificationId = String(notification._id);
-    const currentRetryCount = notification.retryCount || 0;
+    const currentRetryCount = notification.retryCount;
 
     if (currentRetryCount >= this.config.maxRetries) {
       // Max retries reached, mark as failed
       await notificationService.updateStatus(notificationId, 'failed', {
         errorMessage: `Max retries exceeded. Last error: ${errorMessage}`,
       });
-      console.log(`[NotificationProcessor] Notification ${notificationId} failed after ${currentRetryCount} retries`);
+      console.log(
+        `[NotificationProcessor] Notification ${notificationId} failed after ${String(currentRetryCount)} retries`
+      );
       return;
     }
 
     // Schedule retry with exponential backoff
     const retryDelayIndex = Math.min(currentRetryCount, this.config.retryDelaysMs.length - 1);
-    const retryDelay = this.config.retryDelaysMs[retryDelayIndex]!;
+    const retryDelay =
+      this.config.retryDelaysMs[retryDelayIndex] ?? this.config.retryDelaysMs[0] ?? 60000;
     const retryAt = new Date(Date.now() + retryDelay);
 
     await Notification.findByIdAndUpdate(notificationId, {
@@ -293,7 +314,7 @@ class NotificationProcessor {
     });
 
     console.log(
-      `[NotificationProcessor] Scheduled retry ${currentRetryCount + 1}/${this.config.maxRetries} for ${notificationId} at ${retryAt.toISOString()}`
+      `[NotificationProcessor] Scheduled retry ${String(currentRetryCount + 1)}/${String(this.config.maxRetries)} for ${notificationId} at ${retryAt.toISOString()}`
     );
   }
 

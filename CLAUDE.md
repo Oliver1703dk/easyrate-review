@@ -19,7 +19,7 @@ EasyRate is a SaaS review management platform that automates customer feedback c
 - **Database**: MongoDB (multi-tenant with `business_id` scoping)
 - **File Storage**: AWS S3 (EU region: eu-central-1)
 - **SMS**: InMobile (alphanumeric sender ID)
-- **Email**: SendGrid or AWS SES
+- **Email**: Resend
 - **Monorepo**: pnpm workspaces + Turborepo
 
 ## Project Structure
@@ -36,9 +36,11 @@ EasyRate is a SaaS review management platform that automates customer feedback c
 ## Key Patterns
 
 ### Multi-Tenancy
+
 All data models include `business_id`. Every database query must be scoped by tenant.
 
 ### Integration Adapters
+
 Integrations use a common adapter interface for extensibility:
 
 ```typescript
@@ -51,6 +53,7 @@ interface IntegrationAdapter {
 ```
 
 ### Provider Abstraction
+
 SMS/Email providers are abstracted behind interfaces to allow switching:
 
 ```typescript
@@ -70,10 +73,10 @@ Reserved fields for future: `location_id`, `metadata` (JSON), `tags` (array)
 
 ## Integrations
 
-| Platform   | Type     | Trigger Delay |
-|------------|----------|---------------|
-| Dully      | Webhook  | 1 hour after pickup |
-| EasyTable  | REST API | 2 hours after booking |
+| Platform  | Type     | Trigger Delay         |
+| --------- | -------- | --------------------- |
+| Dully     | Webhook  | 1 hour after pickup   |
+| EasyTable | REST API | 2 hours after booking |
 
 ## Language & Locale
 
