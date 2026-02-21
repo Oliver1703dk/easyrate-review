@@ -233,7 +233,7 @@ Reply ONLY with the response text, no explanations.`;
         severity: this.validateSeverity(theme.severity) ?? 'medium',
         sentiment: this.validateThemeSentiment(theme.sentiment) ?? 'neutral',
         exampleQuotes: Array.isArray(theme.exampleQuotes) ? theme.exampleQuotes.map(String) : [],
-        suggestion: theme.suggestion,
+        suggestion: theme.suggestion ?? '',
       })),
       topImprovementPoint: parsed.topImprovementPoint,
       customerSatisfactionSummary: parsed.customerSatisfactionSummary,

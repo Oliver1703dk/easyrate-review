@@ -177,7 +177,7 @@ export class InsightsService {
     from.setDate(from.getDate() - DEFAULT_ANALYSIS_DAYS);
 
     // Determine AI provider
-    const preferredProvider = business.settings.aiSettings.provider;
+    const preferredProvider = business.settings.aiSettings?.provider;
     const providerName = getConfiguredAIProviderName() ?? 'grok';
 
     const run = new InsightRun({
