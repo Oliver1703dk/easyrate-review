@@ -222,9 +222,9 @@ router.post(
 
       const reviewInput: Parameters<typeof reviewService.create>[1] = {
         rating: body.rating,
-        feedbackText: body.feedbackText,
-        customer: hasCustomerInfo ? mergedCustomer : undefined,
-        photos: body.photos,
+        ...(body.feedbackText && { feedbackText: body.feedbackText }),
+        ...(hasCustomerInfo && { customer: mergedCustomer }),
+        ...(body.photos && { photos: body.photos }),
         sourcePlatform,
         consent: consentRecord,
       };
