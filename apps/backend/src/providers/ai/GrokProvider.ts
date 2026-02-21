@@ -51,7 +51,7 @@ export class GrokProvider extends BaseAIProvider {
       throw new Error('Grok API is not configured');
     }
 
-    const model = this.config.model || this.defaultModel;
+    const model = this.config.model ?? this.defaultModel;
     const prompt = this.buildAnalysisPrompt(input);
 
     this.log('Starting analysis', {
@@ -63,7 +63,8 @@ export class GrokProvider extends BaseAIProvider {
     const messages: GrokChatMessage[] = [
       {
         role: 'system',
-        content: 'Du er en ekspert i kundefeedback-analyse. Svar KUN med valid JSON, ingen markdown eller forklaringer.',
+        content:
+          'You are an expert in customer feedback analysis. Reply ONLY with valid JSON, no markdown or explanations.',
       },
       {
         role: 'user',
@@ -75,7 +76,7 @@ export class GrokProvider extends BaseAIProvider {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.config.apiKey}`,
+        Authorization: `Bearer ${this.config.apiKey}`,
       },
       body: JSON.stringify({
         model,
@@ -88,17 +89,18 @@ export class GrokProvider extends BaseAIProvider {
     if (!response.ok) {
       const errorText = await response.text();
       this.logError('API request failed', { status: response.status, error: errorText });
-      throw new Error(`Grok API error: ${response.status} - ${errorText}`);
+      throw new Error(`Grok API error: ${String(response.status)} - ${errorText}`);
     }
 
-    const data = await response.json() as GrokChatResponse;
+    const data = (await response.json()) as GrokChatResponse;
 
-    if (!data.choices || data.choices.length === 0) {
+    const [firstChoice] = data.choices;
+    if (!firstChoice) {
       throw new Error('Grok API returned no choices');
     }
 
-    const responseText = data.choices[0]!.message.content;
-    const tokensUsed = data.usage?.total_tokens || 0;
+    const responseText = firstChoice.message.content;
+    const tokensUsed = data.usage.total_tokens;
 
     this.log('Analysis completed', { tokensUsed, model });
 
@@ -110,7 +112,7 @@ export class GrokProvider extends BaseAIProvider {
       throw new Error('Grok API is not configured');
     }
 
-    const model = this.config.model || this.defaultModel;
+    const model = this.config.model ?? this.defaultModel;
     const prompt = this.buildResponsePrompt(input);
 
     this.log('Generating response', {
@@ -122,7 +124,8 @@ export class GrokProvider extends BaseAIProvider {
     const messages: GrokChatMessage[] = [
       {
         role: 'system',
-        content: 'Du er en professionel kundeservicemedarbejder. Skriv venlige, personlige svar på dansk.',
+        content:
+          'You are a professional customer service representative. Write friendly, personal responses.',
       },
       {
         role: 'user',
@@ -134,7 +137,7 @@ export class GrokProvider extends BaseAIProvider {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.config.apiKey}`,
+        Authorization: `Bearer ${this.config.apiKey}`,
       },
       body: JSON.stringify({
         model,
@@ -147,17 +150,18 @@ export class GrokProvider extends BaseAIProvider {
     if (!response.ok) {
       const errorText = await response.text();
       this.logError('API request failed', { status: response.status, error: errorText });
-      throw new Error(`Grok API error: ${response.status} - ${errorText}`);
+      throw new Error(`Grok API error: ${String(response.status)} - ${errorText}`);
     }
 
-    const data = await response.json() as GrokChatResponse;
+    const data = (await response.json()) as GrokChatResponse;
 
-    if (!data.choices || data.choices.length === 0) {
+    const [firstChoice] = data.choices;
+    if (!firstChoice) {
       throw new Error('Grok API returned no choices');
     }
 
-    const responseText = data.choices[0]!.message.content.trim();
-    const tokensUsed = data.usage?.total_tokens || 0;
+    const responseText = firstChoice.message.content.trim();
+    const tokensUsed = data.usage.total_tokens;
 
     this.log('Response generated', { tokensUsed, model });
 

@@ -3,14 +3,17 @@ import type {
   InsightRun as InsightRunType,
   InsightTrigger,
   InsightStatusResponse,
-  AIProviderType,
 } from '@easyrate/shared';
 import { InsightRun, type InsightRunDocument } from '../models/InsightRun.js';
 import { Review } from '../models/Review.js';
 import { Business } from '../models/Business.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { calculatePagination, type PaginationMeta } from '../utils/response.js';
-import { getAIProvider, isAIConfigured, getConfiguredAIProviderName } from '../providers/ProviderFactory.js';
+import {
+  getAIProvider,
+  isAIConfigured,
+  getConfiguredAIProviderName,
+} from '../providers/ProviderFactory.js';
 
 // Rate limit: 1 manual refresh per hour
 const MANUAL_REFRESH_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
@@ -54,7 +57,7 @@ export class InsightsService {
   async getByIdOrThrow(businessId: string, id: string): Promise<InsightRunType> {
     const run = await this.getById(businessId, id);
     if (!run) {
-      throw new NotFoundError('Indsigt ikke fundet');
+      throw new NotFoundError('Insight not found');
     }
     return run;
   }
@@ -62,18 +65,11 @@ export class InsightsService {
   /**
    * List insight runs for a business with pagination
    */
-  async list(
-    businessId: string,
-    page: number = 1,
-    limit: number = 10
-  ): Promise<PaginatedInsightRuns> {
+  async list(businessId: string, page = 1, limit = 10): Promise<PaginatedInsightRuns> {
     const skip = (page - 1) * limit;
 
     const [runs, total] = await Promise.all([
-      InsightRun.find({ businessId })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
+      InsightRun.find({ businessId }).sort({ createdAt: -1 }).skip(skip).limit(limit),
       InsightRun.countDocuments({ businessId }),
     ]);
 
@@ -128,10 +124,10 @@ export class InsightsService {
   async getStatus(businessId: string): Promise<InsightStatusResponse> {
     const business = await Business.findById(businessId);
     if (!business) {
-      throw new NotFoundError('Virksomhed ikke fundet');
+      throw new NotFoundError('Business not found');
     }
 
-    const aiEnabled = business.settings?.aiSettings?.enabled ?? false;
+    const aiEnabled = business.settings.aiSettings?.enabled ?? false;
     const configured = isAIConfigured();
     const rateLimit = await this.canRequestNewInsight(businessId);
 
@@ -148,19 +144,16 @@ export class InsightsService {
   /**
    * Create a new pending insight run
    */
-  async createRun(
-    businessId: string,
-    triggeredBy: InsightTrigger
-  ): Promise<InsightRunType> {
+  async createRun(businessId: string, triggeredBy: InsightTrigger): Promise<InsightRunType> {
     // Check rate limit for manual requests
     if (triggeredBy === 'manual') {
       const rateLimit = await this.canRequestNewInsight(businessId);
       if (!rateLimit.canRequest) {
         throw new ValidationError(
-          `Du kan kun generere ny indsigt én gang i timen. Prøv igen ${
+          `You can only generate new insights once per hour. Try again ${
             rateLimit.nextAvailableAt
-              ? `efter ${rateLimit.nextAvailableAt.toLocaleTimeString('da-DK')}`
-              : 'senere'
+              ? `after ${rateLimit.nextAvailableAt.toLocaleTimeString('en-GB')}`
+              : 'later'
           }`,
           { code: 'RATE_LIMITED' }
         );
@@ -169,13 +162,13 @@ export class InsightsService {
 
     // Check if AI is configured
     if (!isAIConfigured()) {
-      throw new ValidationError('AI er ikke konfigureret', { code: 'AI_NOT_CONFIGURED' });
+      throw new ValidationError('AI is not configured', { code: 'AI_NOT_CONFIGURED' });
     }
 
     // Get business for AI settings
     const business = await Business.findById(businessId);
     if (!business) {
-      throw new NotFoundError('Virksomhed ikke fundet');
+      throw new NotFoundError('Business not found');
     }
 
     // Calculate date range (last 30 days)
@@ -184,8 +177,8 @@ export class InsightsService {
     from.setDate(from.getDate() - DEFAULT_ANALYSIS_DAYS);
 
     // Determine AI provider
-    const preferredProvider = (business.settings?.aiSettings?.provider as AIProviderType) || 'grok';
-    const providerName = getConfiguredAIProviderName() || 'grok';
+    const preferredProvider = business.settings.aiSettings.provider;
+    const providerName = getConfiguredAIProviderName() ?? 'grok';
 
     const run = new InsightRun({
       businessId,
@@ -210,11 +203,13 @@ export class InsightsService {
   async processRun(runId: string): Promise<InsightRunType> {
     const run = await InsightRun.findById(runId);
     if (!run) {
-      throw new NotFoundError('Indsigt ikke fundet');
+      throw new NotFoundError('Insight not found');
     }
 
     if (run.status !== 'pending') {
-      throw new ValidationError('Indsigt er allerede behandlet', { code: 'ALREADY_PROCESSED' });
+      throw new ValidationError('Insight has already been processed', {
+        code: 'ALREADY_PROCESSED',
+      });
     }
 
     const startTime = Date.now();
@@ -235,15 +230,21 @@ export class InsightsService {
 
       run.reviewCount = reviews.length;
 
+      // Calculate actual average rating from reviews
+      if (reviews.length > 0) {
+        const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
+        run.avgRating = Math.round((totalRating / reviews.length) * 10) / 10;
+      }
+
       // Check if we have enough reviews
       if (reviews.length === 0) {
         run.status = 'completed';
         run.overallSentiment = {
           score: 50,
           label: 'neutral',
-          summary: 'Ingen anmeldelser i perioden til analyse.',
+          summary: 'No reviews in the period to analyse.',
         };
-        run.customerSatisfactionSummary = 'Der er ingen anmeldelser at analysere i den valgte periode.';
+        run.customerSatisfactionSummary = 'There are no reviews to analyse in the selected period.';
         run.processingTimeMs = Date.now() - startTime;
         await run.save();
 
@@ -256,18 +257,18 @@ export class InsightsService {
       // Get business info
       const business = await Business.findById(run.businessId);
       if (!business) {
-        throw new NotFoundError('Virksomhed ikke fundet');
+        throw new NotFoundError('Business not found');
       }
 
       // Get AI provider and analyze
       const aiProvider = getAIProvider(run.aiProvider);
 
       const analysisInput = {
-        reviews: reviews.map(r => ({
+        reviews: reviews.map((r) => ({
           rating: r.rating,
           feedbackText: r.feedbackText,
           createdAt: r.createdAt,
-          customerId: r.customer?.email || r.customer?.phone || undefined,
+          customerId: r.customer.email ?? r.customer.phone ?? undefined,
         })),
         businessName: business.name,
         analysisLanguage: 'da' as const,
@@ -298,7 +299,7 @@ export class InsightsService {
     } catch (error) {
       // Mark run as failed
       run.status = 'failed';
-      run.errorMessage = error instanceof Error ? error.message : 'Ukendt fejl';
+      run.errorMessage = error instanceof Error ? error.message : 'Unknown error';
       run.processingTimeMs = Date.now() - startTime;
       await run.save();
 
@@ -310,10 +311,7 @@ export class InsightsService {
   /**
    * Create and process a new insight run in one step
    */
-  async createAndProcess(
-    businessId: string,
-    triggeredBy: InsightTrigger
-  ): Promise<InsightRunType> {
+  async createAndProcess(businessId: string, triggeredBy: InsightTrigger): Promise<InsightRunType> {
     const run = await this.createRun(businessId, triggeredBy);
     return this.processRun(run.id);
   }
@@ -322,7 +320,7 @@ export class InsightsService {
    * Get businesses that need scheduled insight refresh
    * Returns businesses with AI enabled, autoRefresh on, and last run > 7 days ago
    */
-  async getBusinessesNeedingRefresh(limit: number = 10): Promise<string[]> {
+  async getBusinessesNeedingRefresh(limit = 10): Promise<string[]> {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -337,7 +335,7 @@ export class InsightsService {
       .select('_id')
       .limit(limit);
 
-    return businesses.map(b => String(b._id));
+    return businesses.map((b) => String(b._id));
   }
 
   /**

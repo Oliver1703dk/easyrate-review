@@ -17,7 +17,12 @@ export function ReviewPage() {
   const { token } = useParams<{ token: string }>();
   const [searchParams] = useSearchParams();
   const isTest = searchParams.get('isTest') === 'true';
-  const { business, customer, isLoading: isLoadingBusiness, error: businessError } = useBusinessData(token);
+  const {
+    business,
+    customer,
+    isLoading: isLoadingBusiness,
+    error: businessError,
+  } = useBusinessData(token);
   const { state, setRating, startSubmit, submitSuccess, submitError, markExternalReview, reset } =
     useReviewFlow();
 
@@ -72,31 +77,40 @@ export function ReviewPage() {
   );
 
   // Handle external review click (Google)
-  const handleExternalReviewClick = useCallback(async () => {
+  const handleExternalReviewClick = useCallback(() => {
     if (!token || !state.rating || !business?.googleReviewUrl) return;
 
-    // Mark that user is going to external review
-    markExternalReview();
-
-    // Submit the review to our backend
-    try {
-      await api.submitReview(token, {
-        rating: state.rating,
-        submittedExternalReview: true,
-        consent: { given: true },
-        // Include customer info from JWT if available
-        ...(customer && { customer }),
-      }, isTest);
-    } catch {
-      // Silently fail - user is going to external site anyway
-    }
-
-    // Open Google review page in new tab
+    // Open Google review page immediately (must be synchronous to avoid mobile popup blockers)
     window.open(business.googleReviewUrl, '_blank', 'noopener,noreferrer');
 
-    // Show thank you screen
+    markExternalReview();
+
+    // Submit the review to our backend (fire-and-forget)
+    api
+      .submitReview(
+        token,
+        {
+          rating: state.rating,
+          submittedExternalReview: true,
+          consent: { given: true },
+          ...(customer && { customer }),
+        },
+        isTest
+      )
+      .catch(() => {
+        // Silently fail - user is already on external site
+      });
+
     submitSuccess();
-  }, [token, state.rating, business?.googleReviewUrl, isTest, customer, markExternalReview, submitSuccess]);
+  }, [
+    token,
+    state.rating,
+    business?.googleReviewUrl,
+    isTest,
+    customer,
+    markExternalReview,
+    submitSuccess,
+  ]);
 
   // Handle skip external review
   const handleSkipExternalReview = useCallback(async () => {
@@ -105,13 +119,17 @@ export function ReviewPage() {
     startSubmit();
 
     try {
-      await api.submitReview(token, {
-        rating: state.rating,
-        submittedExternalReview: false,
-        consent: { given: true },
-        // Include customer info from JWT if available
-        ...(customer && { customer }),
-      }, isTest);
+      await api.submitReview(
+        token,
+        {
+          rating: state.rating,
+          submittedExternalReview: false,
+          consent: { given: true },
+          // Include customer info from JWT if available
+          ...(customer && { customer }),
+        },
+        isTest
+      );
       submitSuccess();
     } catch (err) {
       submitError(err instanceof Error ? err.message : ERROR_MESSAGES.reviewSubmitFailed);
@@ -126,7 +144,7 @@ export function ReviewPage() {
   // Handle switching from negative to external (legal requirement)
   const handleNegativeToExternal = useCallback(() => {
     if (business?.googleReviewUrl) {
-      void handleExternalReviewClick();
+      handleExternalReviewClick();
     }
   }, [business?.googleReviewUrl, handleExternalReviewClick]);
 

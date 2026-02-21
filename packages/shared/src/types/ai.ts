@@ -38,6 +38,7 @@ export interface InsightRun {
     to: Date;
   };
   reviewCount: number;
+  avgRating?: number;
   overallSentiment?: OverallSentiment;
   themes: InsightTheme[];
   topImprovementPoint?: string;

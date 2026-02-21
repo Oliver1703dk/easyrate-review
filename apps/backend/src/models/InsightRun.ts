@@ -1,4 +1,5 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import type { Document, Model } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import type {
   InsightRun as InsightRunType,
   ThemeSeverity,
@@ -19,7 +20,13 @@ const overallSentimentSchema = new Schema(
     score: { type: Number, required: true, min: 0, max: 100 },
     label: {
       type: String,
-      enum: ['very_negative', 'negative', 'neutral', 'positive', 'very_positive'] as SentimentLabel[],
+      enum: [
+        'very_negative',
+        'negative',
+        'neutral',
+        'positive',
+        'very_positive',
+      ] as SentimentLabel[],
       required: true,
     },
     summary: { type: String, required: true },
@@ -78,6 +85,10 @@ const insightRunSchema = new Schema<InsightRunDocument>(
       type: Number,
       required: true,
       default: 0,
+    },
+    avgRating: {
+      type: Number,
+      default: null,
     },
     overallSentiment: {
       type: overallSentimentSchema,

@@ -54,60 +54,60 @@ export abstract class BaseAIProvider {
       input.reviews.length > 0
         ? new Date(Math.min(...input.reviews.map((r) => new Date(r.createdAt).getTime())))
             .toISOString()
-            .split('T')[0]
-        : new Date().toISOString().split('T')[0];
-    const toDate = new Date().toISOString().split('T')[0];
+            .slice(0, 10)
+        : new Date().toISOString().slice(0, 10);
+    const toDate = new Date().toISOString().slice(0, 10);
 
     const reviewsText = input.reviews
       .map((r, i) => {
-        const text = r.feedbackText ? `"${r.feedbackText}"` : '(ingen tekst)';
-        return `${i + 1}. Rating: ${r.rating}/5 - ${text}`;
+        const text = r.feedbackText ? `"${r.feedbackText}"` : '(no text)';
+        return `${String(i + 1)}. Rating: ${String(r.rating)}/5 - ${text}`;
       })
       .join('\n');
 
-    return `Du er en ekspert i kundefeedback-analyse for danske restauranter og servicevirksomheder.
+    return `You are an expert in customer feedback analysis for restaurants and service businesses.
 
-Analyser følgende kundeanmeldelser og generer en struktureret rapport på dansk.
+Analyse the following customer reviews and generate a structured report in English.
 
-VIRKSOMHED: ${input.businessName}
-PERIODE: ${fromDate} til ${toDate}
-ANTAL ANMELDELSER: ${input.reviews.length}
+BUSINESS: ${input.businessName}
+PERIOD: ${fromDate} to ${toDate}
+NUMBER OF REVIEWS: ${String(input.reviews.length)}
 
-ANMELDELSER:
+REVIEWS:
 ${reviewsText}
 
 ---
 
-Returner KUN et JSON-objekt (ingen markdown, ingen kodeblokke) med følgende struktur:
+Return ONLY a JSON object (no markdown, no code blocks) with the following structure:
 {
   "overallSentiment": {
-    "score": <nummer 0-100>,
+    "score": <number 0-100>,
     "label": <"very_negative" | "negative" | "neutral" | "positive" | "very_positive">,
-    "summary": "<kort dansk opsummering af kundetilfredsheden>"
+    "summary": "<short summary of customer satisfaction>"
   },
   "themes": [
     {
-      "name": "<tema navn>",
-      "description": "<kort beskrivelse af temaet>",
-      "customerCount": <antal unikke kunder der nævner dette>,
-      "mentionCount": <antal gange temaet nævnes>,
+      "name": "<theme name>",
+      "description": "<short description of the theme>",
+      "customerCount": <number of unique customers mentioning this>,
+      "mentionCount": <number of times the theme is mentioned>,
       "severity": <"critical" | "high" | "medium" | "low">,
       "sentiment": <"positive" | "negative" | "neutral">,
-      "exampleQuotes": ["<citat 1>", "<citat 2>"],
-      "suggestion": "<konkret handlingsforslag>"
+      "exampleQuotes": ["<quote 1>", "<quote 2>"],
+      "suggestion": "<concrete actionable suggestion>"
     }
   ],
-  "topImprovementPoint": "<det vigtigste forbedringsområde med konkret forslag>",
-  "customerSatisfactionSummary": "<overordnet vurdering af kundetilfredsheden>"
+  "topImprovementPoint": "<the most important area for improvement with a concrete suggestion>",
+  "customerSatisfactionSummary": "<overall assessment of customer satisfaction>"
 }
 
-REGLER:
-1. Al tekst skal være på dansk
-2. Medtag kun 3-8 temaer, og kun hvis de nævnes af mindst 2 kunder
-3. Severity skal afspejle: critical (gentagne alvorlige klager), high (hyppige problemer), medium (moderate), low (mindre/positive)
-4. Bevar kunders anonymitet i citater (fjern navne, specifikke detaljer)
-5. Forslag skal være konkrete og handlingsorienterede
-6. Hvis der er for få anmeldelser (<5), angiv dette i customerSatisfactionSummary`;
+RULES:
+1. All text must be in English
+2. Include only 3-8 themes, and only if mentioned by at least 2 customers
+3. Severity should reflect: critical (repeated serious complaints), high (frequent issues), medium (moderate), low (minor/positive)
+4. Preserve customer anonymity in quotes (remove names, specific details)
+5. Suggestions must be concrete and actionable
+6. If there are too few reviews (<5), note this in customerSatisfactionSummary`;
   }
 
   /**
@@ -116,76 +116,80 @@ REGLER:
    */
   protected buildResponsePrompt(input: AIResponseGenerationInput): string {
     const { review, businessName } = input;
-    const customerName = review.customerName || 'Kunde';
-    const feedbackText = review.feedbackText || '';
+    const customerName = review.customerName ?? 'Customer';
+    const feedbackText = review.feedbackText ?? '';
     const isNegative = review.rating <= 3;
 
     if (isNegative) {
-      return `Du er kundeservicemedarbejder for ${businessName}.
+      return `You are a customer service representative for ${businessName}.
 
-Skriv et professionelt, empatisk svar på dansk til denne kundeanmeldelse.
+Write a professional, empathetic response to this customer review.
 
-RATING: ${review.rating}/5 stjerner
-KUNDENS FEEDBACK: "${feedbackText}"
-KUNDENS NAVN: ${customerName}
+RATING: ${String(review.rating)}/5 stars
+CUSTOMER FEEDBACK: "${feedbackText}"
+CUSTOMER NAME: ${customerName}
 
-REGLER:
-1. Anerkend kundens oplevelse og vis forståelse
-2. Undskyld for den dårlige oplevelse
-3. Tilbyd en løsning eller næste skridt (Ikke tilbyd rabatter eller tilbud)
-4. Hold tonen professionel men varm
-5. Max 150 ord
-6. Undgå at gentage specifik kritik
-7. Afslut med en invitation til at vende tilbage
+RULES:
+1. Acknowledge the customer's experience and show understanding
+2. Apologise for the poor experience
+3. Offer a solution or next step (do not offer discounts or deals)
+4. Keep the tone professional but warm
+5. Max 150 words
+6. Avoid repeating specific criticism
+7. End with an invitation to return
 
-Svar KUN med svarteksten, ingen forklaringer.`;
+Reply ONLY with the response text, no explanations.`;
     }
 
     // Different prompt for positive reviews with or without feedback text
     if (feedbackText) {
-      return `Du er kundeservicemedarbejder for ${businessName}.
+      return `You are a customer service representative for ${businessName}.
 
-Skriv et varmt, personligt svar på dansk til denne positive kundeanmeldelse.
+Write a warm, personal response to this positive customer review.
 
-RATING: ${review.rating}/5 stjerner
-KUNDENS FEEDBACK: "${feedbackText}"
-KUNDENS NAVN: ${customerName}
+RATING: ${String(review.rating)}/5 stars
+CUSTOMER FEEDBACK: "${feedbackText}"
+CUSTOMER NAME: ${customerName}
 
-REGLER:
-1. Tak kunden oprigtigt for anmeldelsen
-2. Fremhæv et specifikt punkt de nævnte (hvis relevant)
-3. Udtryk glæde over deres gode oplevelse
-4. Inviter dem til at komme igen
-5. Max 100 ord
-6. Hold tonen varm og personlig
+RULES:
+1. Thank the customer sincerely for the review
+2. Highlight a specific point they mentioned (if relevant)
+3. Express delight at their good experience
+4. Invite them to come again
+5. Max 100 words
+6. Keep the tone warm and personal
 
-Svar KUN med svarteksten, ingen forklaringer.`;
+Reply ONLY with the response text, no explanations.`;
     }
 
     // Positive review without feedback text (e.g., went directly to Google)
-    return `Du er kundeservicemedarbejder for ${businessName}.
+    return `You are a customer service representative for ${businessName}.
 
-Skriv et varmt, personligt svar på dansk til denne positive kundeanmeldelse. Kunden gav ${review.rating} stjerner men skrev ingen specifik feedback.
+Write a warm, personal response to this positive customer review. The customer gave ${String(review.rating)} stars but did not write any specific feedback.
 
-RATING: ${review.rating}/5 stjerner
-KUNDENS NAVN: ${customerName}
+RATING: ${String(review.rating)}/5 stars
+CUSTOMER NAME: ${customerName}
 
-REGLER:
-1. Tak kunden oprigtigt for deres positive bedømmelse
-2. Udtryk glæde over at de havde en god oplevelse
-3. Nævn at deres støtte betyder meget for jer
-4. Inviter dem til at komme igen
-5. Max 80 ord
-6. Hold tonen varm og personlig
-7. Undgå at referere til specifik feedback (der er ingen)
+RULES:
+1. Thank the customer sincerely for their positive rating
+2. Express delight that they had a good experience
+3. Mention that their support means a lot
+4. Invite them to come again
+5. Max 80 words
+6. Keep the tone warm and personal
+7. Avoid referring to specific feedback (there is none)
 
-Svar KUN med svarteksten, ingen forklaringer.`;
+Reply ONLY with the response text, no explanations.`;
   }
 
   /**
    * Parse the AI response into structured result
    */
-  protected parseAnalysisResponse(responseText: string, modelUsed: string, tokensUsed: number): AIAnalysisResult {
+  protected parseAnalysisResponse(
+    responseText: string,
+    modelUsed: string,
+    tokensUsed: number
+  ): AIAnalysisResult {
     // Clean the response - remove markdown code blocks if present
     let cleanedResponse = responseText.trim();
     if (cleanedResponse.startsWith('```json')) {
@@ -198,27 +202,41 @@ Svar KUN med svarteksten, ingen forklaringer.`;
     }
     cleanedResponse = cleanedResponse.trim();
 
-    const parsed = JSON.parse(cleanedResponse);
+    const parsed = JSON.parse(cleanedResponse) as {
+      overallSentiment?: { score?: number; label?: string; summary?: string };
+      themes?: {
+        name?: string;
+        description?: string;
+        customerCount?: number;
+        mentionCount?: number;
+        severity?: string;
+        sentiment?: string;
+        exampleQuotes?: string[];
+        suggestion?: string;
+      }[];
+      topImprovementPoint?: string;
+      customerSatisfactionSummary?: string;
+    };
 
     // Validate and normalize the response
     const result: AIAnalysisResult = {
       overallSentiment: {
-        score: Math.min(100, Math.max(0, Number(parsed.overallSentiment?.score) || 50)),
-        label: this.validateSentimentLabel(parsed.overallSentiment?.label) || 'neutral',
-        summary: String(parsed.overallSentiment?.summary || 'Ingen opsummering tilgængelig'),
+        score: Math.min(100, Math.max(0, parsed.overallSentiment?.score ?? 50)),
+        label: this.validateSentimentLabel(parsed.overallSentiment?.label) ?? 'neutral',
+        summary: parsed.overallSentiment?.summary ?? 'No summary available',
       },
-      themes: (parsed.themes || []).map((theme: Record<string, unknown>) => ({
-        name: String(theme.name || 'Ukendt tema'),
-        description: String(theme.description || ''),
-        customerCount: Math.max(0, Number(theme.customerCount) || 0),
-        mentionCount: Math.max(0, Number(theme.mentionCount) || 0),
-        severity: this.validateSeverity(theme.severity as string) || 'medium',
-        sentiment: this.validateThemeSentiment(theme.sentiment as string) || 'neutral',
+      themes: (parsed.themes ?? []).map((theme) => ({
+        name: theme.name ?? 'Unknown theme',
+        description: theme.description ?? '',
+        customerCount: Math.max(0, theme.customerCount ?? 0),
+        mentionCount: Math.max(0, theme.mentionCount ?? 0),
+        severity: this.validateSeverity(theme.severity) ?? 'medium',
+        sentiment: this.validateThemeSentiment(theme.sentiment) ?? 'neutral',
         exampleQuotes: Array.isArray(theme.exampleQuotes) ? theme.exampleQuotes.map(String) : [],
-        suggestion: theme.suggestion ? String(theme.suggestion) : undefined,
+        suggestion: theme.suggestion,
       })),
-      topImprovementPoint: parsed.topImprovementPoint ? String(parsed.topImprovementPoint) : undefined,
-      customerSatisfactionSummary: parsed.customerSatisfactionSummary ? String(parsed.customerSatisfactionSummary) : undefined,
+      topImprovementPoint: parsed.topImprovementPoint,
+      customerSatisfactionSummary: parsed.customerSatisfactionSummary,
       tokensUsed,
       modelUsed,
     };
@@ -229,9 +247,13 @@ Svar KUN med svarteksten, ingen forklaringer.`;
   /**
    * Validate sentiment label
    */
-  private validateSentimentLabel(label: unknown): 'very_negative' | 'negative' | 'neutral' | 'positive' | 'very_positive' | null {
+  private validateSentimentLabel(
+    label: unknown
+  ): 'very_negative' | 'negative' | 'neutral' | 'positive' | 'very_positive' | null {
     const validLabels = ['very_negative', 'negative', 'neutral', 'positive', 'very_positive'];
-    return validLabels.includes(String(label)) ? (label as 'very_negative' | 'negative' | 'neutral' | 'positive' | 'very_positive') : null;
+    return validLabels.includes(String(label))
+      ? (label as 'very_negative' | 'negative' | 'neutral' | 'positive' | 'very_positive')
+      : null;
   }
 
   /**
@@ -239,7 +261,9 @@ Svar KUN med svarteksten, ingen forklaringer.`;
    */
   private validateSeverity(severity: unknown): 'critical' | 'high' | 'medium' | 'low' | null {
     const validSeverities = ['critical', 'high', 'medium', 'low'];
-    return validSeverities.includes(String(severity)) ? (severity as 'critical' | 'high' | 'medium' | 'low') : null;
+    return validSeverities.includes(String(severity))
+      ? (severity as 'critical' | 'high' | 'medium' | 'low')
+      : null;
   }
 
   /**
@@ -247,7 +271,9 @@ Svar KUN med svarteksten, ingen forklaringer.`;
    */
   private validateThemeSentiment(sentiment: unknown): 'positive' | 'negative' | 'neutral' | null {
     const validSentiments = ['positive', 'negative', 'neutral'];
-    return validSentiments.includes(String(sentiment)) ? (sentiment as 'positive' | 'negative' | 'neutral') : null;
+    return validSentiments.includes(String(sentiment))
+      ? (sentiment as 'positive' | 'negative' | 'neutral')
+      : null;
   }
 
   /**
