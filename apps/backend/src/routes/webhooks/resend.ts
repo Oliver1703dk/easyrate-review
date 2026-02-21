@@ -109,8 +109,9 @@ function shouldUpdateStatus(
     delivered: 2,
     opened: 3,
     clicked: 4,
-    failed: 5,
-    bounced: 5,
+    converted: 5,
+    failed: 6,
+    bounced: 6,
   };
 
   const currentOrder = statusOrder[currentStatus];

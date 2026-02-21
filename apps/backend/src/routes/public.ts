@@ -205,11 +205,17 @@ router.post(
       const isTest = req.query.isTest === 'true';
 
       // Merge customer info: JWT payload provides defaults, request body can override
-      const mergedCustomer = {
+      const merged = {
         ...tokenPayload?.customer,
         ...body.customer,
       };
-      const hasCustomerInfo = mergedCustomer.email ?? mergedCustomer.phone ?? mergedCustomer.name;
+      const hasCustomerInfo = merged.email ?? merged.phone ?? merged.name;
+
+      // Build clean customer object without undefined values (exactOptionalPropertyTypes)
+      const mergedCustomer: Record<string, string> = {};
+      if (merged.email) mergedCustomer.email = merged.email;
+      if (merged.phone) mergedCustomer.phone = merged.phone;
+      if (merged.name) mergedCustomer.name = merged.name;
 
       // Determine source platform: JWT payload or default to 'direct'
       const sourcePlatform = tokenPayload?.sourcePlatform ?? 'direct';
