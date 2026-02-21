@@ -60,3 +60,5 @@ tmp
 temp
 *.tmp
 *.temp
+
+apps/backend/easyrate-review.env

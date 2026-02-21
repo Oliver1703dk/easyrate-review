@@ -7,7 +7,8 @@ export type NotificationStatus =
   | 'failed'
   | 'bounced'
   | 'opened'
-  | 'clicked';
+  | 'clicked'
+  | 'converted';
 
 export interface Notification {
   id: string;
@@ -25,6 +26,7 @@ export interface Notification {
   deliveredAt?: Date;
   openedAt?: Date;
   clickedAt?: Date;
+  convertedAt?: Date;
   locationId?: string; // Reserved for future multi-location support
   metadata?: Record<string, unknown>; // Reserved for extensibility
   createdAt: Date;

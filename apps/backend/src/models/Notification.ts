@@ -1,4 +1,5 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import type { Document, Model } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import type { Notification as NotificationType } from '@easyrate/shared';
 
 export interface NotificationConsent {
@@ -7,7 +8,8 @@ export interface NotificationConsent {
   consentSource?: 'order' | 'signup' | 'manual';
 }
 
-export interface NotificationDocument extends Omit<NotificationType, 'id' | 'businessId'>, Document {
+export interface NotificationDocument
+  extends Omit<NotificationType, 'id' | 'businessId'>, Document {
   _id: mongoose.Types.ObjectId;
   businessId: mongoose.Types.ObjectId;
   retryCount: number;
@@ -29,7 +31,7 @@ const notificationSchema = new Schema<NotificationDocument>(
     },
     status: {
       type: String,
-      enum: ['pending', 'sent', 'delivered', 'failed', 'bounced', 'opened', 'clicked'],
+      enum: ['pending', 'sent', 'delivered', 'failed', 'bounced', 'opened', 'clicked', 'converted'],
       default: 'pending',
     },
     recipient: {
@@ -68,6 +70,9 @@ const notificationSchema = new Schema<NotificationDocument>(
       type: Date,
     },
     clickedAt: {
+      type: Date,
+    },
+    convertedAt: {
       type: Date,
     },
     retryCount: {

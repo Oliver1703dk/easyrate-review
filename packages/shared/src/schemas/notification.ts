@@ -10,6 +10,7 @@ export const notificationStatusSchema = z.enum([
   'bounced',
   'opened',
   'clicked',
+  'converted',
 ]);
 
 export const createNotificationSchema = z.object({

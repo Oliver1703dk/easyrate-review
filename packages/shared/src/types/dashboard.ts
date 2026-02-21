@@ -42,6 +42,8 @@ export interface NotificationStats {
   emailOpened: number;
   smsClicked: number;
   emailClicked: number;
+  smsConverted: number;
+  emailConverted: number;
 }
 
 export interface DateRange {

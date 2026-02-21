@@ -18,7 +18,7 @@ export function OverviewPage() {
 
   // Calculate metrics
   const totalReviews = reviewStats?.total ?? 0;
-  const avgRating = reviewStats?.avgRating?.toFixed(1) ?? '0.0';
+  const avgRating = reviewStats?.avgRating.toFixed(1) ?? '0.0';
   const smsSent = notificationStats?.smsSent ?? 0;
   const emailSent = notificationStats?.emailSent ?? 0;
   const customersRequested = smsSent + emailSent;
@@ -29,22 +29,22 @@ export function OverviewPage() {
   const emailData = {
     channel: DASHBOARD_TEXT.overview.email,
     sent: notificationStats?.emailSent ?? 0,
-    opened: notificationStats?.emailOpened ?? 0,
-    reviews: Math.round((notificationStats?.emailClicked ?? 0) * 0.3), // Estimate
+    opened: notificationStats?.emailClicked ?? 0,
+    reviews: notificationStats?.emailConverted ?? 0,
     conversion:
       notificationStats?.emailSent && notificationStats.emailSent > 0
-        ? Math.round((notificationStats.emailClicked / notificationStats.emailSent) * 100)
+        ? Math.round((notificationStats.emailConverted / notificationStats.emailSent) * 100)
         : 0,
   };
 
   const smsData = {
     channel: DASHBOARD_TEXT.overview.sms,
     sent: notificationStats?.smsSent ?? 0,
-    opened: notificationStats?.smsDelivered ?? 0,
-    reviews: Math.round((notificationStats?.smsClicked ?? 0) * 0.4), // Estimate
+    opened: notificationStats?.smsClicked ?? 0,
+    reviews: notificationStats?.smsConverted ?? 0,
     conversion:
       notificationStats?.smsSent && notificationStats.smsSent > 0
-        ? Math.round((notificationStats.smsClicked / notificationStats.smsSent) * 100)
+        ? Math.round((notificationStats.smsConverted / notificationStats.smsSent) * 100)
         : 0,
   };
 
@@ -81,11 +81,7 @@ export function OverviewPage() {
             trend={reviewStats?.recentTrend}
             icon={MessageSquare}
           />
-          <MetricCard
-            label={DASHBOARD_TEXT.overview.avgRating}
-            value={avgRating}
-            icon={Star}
-          />
+          <MetricCard label={DASHBOARD_TEXT.overview.avgRating} value={avgRating} icon={Star} />
           <MetricCard
             label={DASHBOARD_TEXT.overview.customersRequested}
             value={customersRequested}
@@ -93,7 +89,7 @@ export function OverviewPage() {
           />
           <MetricCard
             label={DASHBOARD_TEXT.overview.responseRate}
-            value={`${responseRate}%`}
+            value={`${String(responseRate)}%`}
             icon={Percent}
           />
           <MetricCard
@@ -101,11 +97,7 @@ export function OverviewPage() {
             value={smsSent}
             icon={MessageCircle}
           />
-          <MetricCard
-            label={DASHBOARD_TEXT.overview.emailSent}
-            value={emailSent}
-            icon={Mail}
-          />
+          <MetricCard label={DASHBOARD_TEXT.overview.emailSent} value={emailSent} icon={Mail} />
         </div>
 
         {/* Channel Performance & Internal Feedback */}

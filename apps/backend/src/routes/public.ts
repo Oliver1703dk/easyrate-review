@@ -1,4 +1,5 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import { z } from 'zod';
 import { reviewRatingSchema, reviewCustomerSchema } from '@easyrate/shared';
 import type { ReviewTokenPayload, ReviewTokenCustomer } from '@easyrate/shared';
@@ -88,19 +89,21 @@ router.get(
       // Track link click if notificationId is present in JWT
       if (tokenPayload?.notificationId) {
         // Fire and forget - don't block response for tracking
-        notificationService.updateStatus(tokenPayload.notificationId, 'clicked').catch((err) => {
-          console.warn(`[public] Failed to track click for notification ${tokenPayload.notificationId}:`, err.message);
+        const nId = tokenPayload.notificationId;
+        notificationService.updateStatus(nId, 'clicked').catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : 'unknown';
+          console.warn(`[public] Failed to track click for notification ${nId}:`, msg);
         });
       }
 
       // Access GDPR settings safely
-      const gdprSettings = (business.settings as { gdpr?: { privacyPolicyUrl?: string } } | undefined)?.gdpr;
+      const gdprSettings = (business.settings as { gdpr?: { privacyPolicyUrl?: string } }).gdpr;
 
       // Build branding object, only adding logoUrl if it exists
       const branding: { primaryColor: string; logoUrl?: string } = {
-        primaryColor: business.branding?.primaryColor || business.settings?.primaryColor || '#3B82F6',
+        primaryColor: business.branding.primaryColor,
       };
-      const logoUrl = business.branding?.logoUrl || business.settings?.logoUrl;
+      const logoUrl = business.branding.logoUrl;
       if (logoUrl) {
         branding.logoUrl = logoUrl;
       }
@@ -124,7 +127,7 @@ router.get(
       };
 
       // Only add optional properties if they exist
-      if (business.settings?.googleReviewUrl) {
+      if (business.settings.googleReviewUrl) {
         response.business.googleReviewUrl = business.settings.googleReviewUrl;
       }
       if (gdprSettings?.privacyPolicyUrl) {
@@ -154,7 +157,7 @@ router.post(
       const { business } = await resolveToken(token);
       const businessId = business._id.toString();
 
-      const { filename, contentType } = req.body;
+      const { filename, contentType } = req.body as z.infer<typeof uploadUrlSchema>;
 
       // Use 'pending' as reviewId since we don't have a review yet
       // Files will be moved/associated when review is created
@@ -187,11 +190,13 @@ router.post(
       const { business, tokenPayload } = await resolveToken(token);
       const businessId = business._id.toString();
 
+      const body = req.body as z.infer<typeof publicReviewSchema>;
+
       // Build consent record
       const consentRecord = {
         given: true as const,
         timestamp: new Date(),
-        ipAddress: req.ip || req.headers['x-forwarded-for'] as string,
+        ipAddress: req.ip ?? (req.headers['x-forwarded-for'] as string),
         userAgent: req.headers['user-agent'],
         version: '1.0',
       };
@@ -202,18 +207,18 @@ router.post(
       // Merge customer info: JWT payload provides defaults, request body can override
       const mergedCustomer = {
         ...tokenPayload?.customer,
-        ...req.body.customer,
+        ...body.customer,
       };
-      const hasCustomerInfo = mergedCustomer.email || mergedCustomer.phone || mergedCustomer.name;
+      const hasCustomerInfo = mergedCustomer.email ?? mergedCustomer.phone ?? mergedCustomer.name;
 
       // Determine source platform: JWT payload or default to 'direct'
-      const sourcePlatform = tokenPayload?.sourcePlatform || 'direct';
+      const sourcePlatform = tokenPayload?.sourcePlatform ?? 'direct';
 
       const reviewInput: Parameters<typeof reviewService.create>[1] = {
-        rating: req.body.rating,
-        feedbackText: req.body.feedbackText,
+        rating: body.rating,
+        feedbackText: body.feedbackText,
         customer: hasCustomerInfo ? mergedCustomer : undefined,
-        photos: req.body.photos,
+        photos: body.photos,
         sourcePlatform,
         consent: consentRecord,
       };
@@ -229,18 +234,31 @@ router.post(
 
       const review = await reviewService.create(businessId, reviewInput);
 
+      // Track conversion if notificationId is present in JWT
+      if (tokenPayload?.notificationId) {
+        const nId = tokenPayload.notificationId;
+        notificationService.updateStatus(nId, 'converted').catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : 'unknown';
+          console.warn(`[public] Failed to track conversion for notification ${nId}:`, msg);
+        });
+      }
+
       // If user indicated they submitted external review, update it
-      if (req.body.submittedExternalReview) {
+      if (body.submittedExternalReview) {
         await reviewService.markExternalReviewSubmitted(businessId, review.id);
       }
 
-      sendSuccess(res, {
-        review: {
-          id: review.id,
-          rating: review.rating,
+      sendSuccess(
+        res,
+        {
+          review: {
+            id: review.id,
+            rating: review.rating,
+          },
+          message: 'Tak for din anmeldelse!',
         },
-        message: 'Tak for din anmeldelse!',
-      }, 201);
+        201
+      );
     } catch (error) {
       next(error);
     }

@@ -5,9 +5,11 @@ import type {
   NotificationStatus,
   NotificationStats,
 } from '@easyrate/shared';
-import { Notification, NotificationDocument } from '../models/Notification.js';
+import type { NotificationDocument } from '../models/Notification.js';
+import { Notification } from '../models/Notification.js';
 import { NotFoundError } from '../utils/errors.js';
-import { calculatePagination, PaginationMeta } from '../utils/response.js';
+import type { PaginationMeta } from '../utils/response.js';
+import { calculatePagination } from '../utils/response.js';
 
 function toNotificationType(doc: NotificationDocument): NotificationType {
   return doc.toJSON() as unknown as NotificationType;
@@ -47,18 +49,12 @@ export class NotificationService {
     return toNotificationType(notification);
   }
 
-  async findById(
-    businessId: string,
-    id: string
-  ): Promise<NotificationType | null> {
+  async findById(businessId: string, id: string): Promise<NotificationType | null> {
     const notification = await Notification.findOne({ _id: id, businessId });
     return notification ? toNotificationType(notification) : null;
   }
 
-  async findByIdOrThrow(
-    businessId: string,
-    id: string
-  ): Promise<NotificationType> {
+  async findByIdOrThrow(businessId: string, id: string): Promise<NotificationType> {
     const notification = await this.findById(businessId, id);
     if (!notification) {
       throw new NotFoundError('Notifikation ikke fundet');
@@ -66,9 +62,7 @@ export class NotificationService {
     return notification;
   }
 
-  async findByExternalMessageId(
-    externalMessageId: string
-  ): Promise<NotificationType | null> {
+  async findByExternalMessageId(externalMessageId: string): Promise<NotificationType | null> {
     const notification = await Notification.findOne({ externalMessageId });
     return notification ? toNotificationType(notification) : null;
   }
@@ -76,8 +70,8 @@ export class NotificationService {
   async list(
     businessId: string,
     filters: NotificationFilters,
-    page: number = 1,
-    limit: number = 20
+    page = 1,
+    limit = 20
   ): Promise<PaginatedNotifications> {
     const query: Record<string, unknown> = { businessId };
 
@@ -100,10 +94,7 @@ export class NotificationService {
     const skip = (page - 1) * limit;
 
     const [notifications, total] = await Promise.all([
-      Notification.find(query)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
+      Notification.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
       Notification.countDocuments(query),
     ]);
 
@@ -147,11 +138,7 @@ export class NotificationService {
       updateData.errorMessage = options.errorMessage;
     }
 
-    const notification = await Notification.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true }
-    );
+    const notification = await Notification.findByIdAndUpdate(id, updateData, { new: true });
 
     if (!notification) {
       throw new NotFoundError('Notifikation ikke fundet');
@@ -160,7 +147,10 @@ export class NotificationService {
     return toNotificationType(notification);
   }
 
-  async getStats(businessId: string, dateRange?: { from: Date; to: Date }): Promise<NotificationStats> {
+  async getStats(
+    businessId: string,
+    dateRange?: { from: Date; to: Date }
+  ): Promise<NotificationStats> {
     const businessObjectId = new mongoose.Types.ObjectId(businessId);
 
     // Build date match condition
@@ -176,21 +166,30 @@ export class NotificationService {
           _id: '$type',
           sent: {
             $sum: {
-              $cond: [{ $in: ['$status', ['sent', 'delivered', 'opened', 'clicked']] }, 1, 0],
+              $cond: [
+                { $in: ['$status', ['sent', 'delivered', 'opened', 'clicked', 'converted']] },
+                1,
+                0,
+              ],
             },
           },
           delivered: {
             $sum: {
-              $cond: [{ $in: ['$status', ['delivered', 'opened', 'clicked']] }, 1, 0],
+              $cond: [{ $in: ['$status', ['delivered', 'opened', 'clicked', 'converted']] }, 1, 0],
             },
           },
           opened: {
             $sum: {
-              $cond: [{ $in: ['$status', ['opened', 'clicked']] }, 1, 0],
+              $cond: [{ $in: ['$status', ['opened', 'clicked', 'converted']] }, 1, 0],
             },
           },
           clicked: {
-            $sum: { $cond: [{ $eq: ['$status', 'clicked'] }, 1, 0] },
+            $sum: {
+              $cond: [{ $in: ['$status', ['clicked', 'converted']] }, 1, 0],
+            },
+          },
+          converted: {
+            $sum: { $cond: [{ $eq: ['$status', 'converted'] }, 1, 0] },
           },
         },
       },
@@ -206,20 +205,31 @@ export class NotificationService {
       emailOpened: 0,
       smsClicked: 0,
       emailClicked: 0,
+      smsConverted: 0,
+      emailConverted: 0,
     };
 
     // Map aggregation results to stats
-    for (const item of aggregation) {
+    for (const item of aggregation as {
+      _id: string;
+      sent: number;
+      delivered: number;
+      opened: number;
+      clicked: number;
+      converted: number;
+    }[]) {
       if (item._id === 'sms') {
         stats.smsSent = item.sent;
         stats.smsDelivered = item.delivered;
         stats.smsOpened = item.opened;
         stats.smsClicked = item.clicked;
+        stats.smsConverted = item.converted;
       } else if (item._id === 'email') {
         stats.emailSent = item.sent;
         stats.emailDelivered = item.delivered;
         stats.emailOpened = item.opened;
         stats.emailClicked = item.clicked;
+        stats.emailConverted = item.converted;
       }
     }
 
@@ -238,11 +248,7 @@ export class NotificationService {
       updateData.subject = data.subject;
     }
 
-    const notification = await Notification.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true }
-    );
+    const notification = await Notification.findByIdAndUpdate(id, updateData, { new: true });
 
     if (!notification) {
       throw new NotFoundError('Notifikation ikke fundet');
@@ -251,10 +257,7 @@ export class NotificationService {
     return toNotificationType(notification);
   }
 
-  async findByIds(
-    businessId: string,
-    ids: string[]
-  ): Promise<NotificationType[]> {
+  async findByIds(businessId: string, ids: string[]): Promise<NotificationType[]> {
     const notifications = await Notification.find({
       businessId,
       _id: { $in: ids },
