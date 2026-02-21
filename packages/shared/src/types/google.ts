@@ -133,8 +133,8 @@ export interface GoogleReviewFromAPI {
 }
 
 export interface GoogleLocationFromAPI {
-  name: string; // Resource name
-  locationName: string;
+  name: string; // Resource name (v1 format: "locations/{id}")
+  title: string; // Business name (v1 field — was "locationName" in v4)
   primaryPhone?: string;
   address?: {
     addressLines: string[];

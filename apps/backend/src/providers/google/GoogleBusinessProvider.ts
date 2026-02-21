@@ -140,7 +140,7 @@ export class GoogleBusinessProvider {
 
           const data = (await response.json()) as { locations?: GoogleLocationFromAPI[] };
           const locations = (data.locations ?? []).map((location) =>
-            this.transformLocation(location)
+            this.transformLocation(location, accountName)
           );
           allLocations.push(...locations);
         } catch (error) {
@@ -311,15 +311,20 @@ export class GoogleBusinessProvider {
   /**
    * Transform Google API location to our format
    */
-  private transformLocation(location: GoogleLocationFromAPI): GoogleLocation {
+  private transformLocation(location: GoogleLocationFromAPI, accountName?: string): GoogleLocation {
     const addressLines = location.address?.addressLines ?? [];
     const address = [...addressLines, location.address?.locality, location.address?.postalCode]
       .filter(Boolean)
       .join(', ');
 
+    // v1 API returns name as "locations/{id}" (no account prefix).
+    // v4 reviews API needs "accounts/{accountId}/locations/{id}".
+    // Prepend account so stored locationIds work with the v4 reviews endpoint.
+    const fullPath = accountName ? `${accountName}/${location.name}` : location.name;
+
     const result: GoogleLocation = {
-      id: location.name,
-      name: location.locationName,
+      id: fullPath,
+      name: location.title,
     };
     if (address) {
       result.address = address;
