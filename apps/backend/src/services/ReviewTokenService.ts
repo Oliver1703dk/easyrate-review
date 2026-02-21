@@ -2,12 +2,13 @@ import jwt from 'jsonwebtoken';
 import type { ReviewTokenPayload } from '@easyrate/shared';
 
 // Use dedicated secret or fall back to JWT_SECRET
-const REVIEW_TOKEN_SECRET = process.env.REVIEW_TOKEN_SECRET ||
-  process.env.JWT_SECRET ||
+const REVIEW_TOKEN_SECRET =
+  process.env.REVIEW_TOKEN_SECRET ??
+  process.env.JWT_SECRET ??
   'development-review-secret-change-in-production';
 
 // Long-lived tokens for review links (default 60 days)
-const REVIEW_TOKEN_EXPIRES_IN = process.env.REVIEW_TOKEN_EXPIRES_IN || '60d';
+const REVIEW_TOKEN_EXPIRES_IN = process.env.REVIEW_TOKEN_EXPIRES_IN ?? '60d';
 
 /**
  * Service for generating and verifying JWT tokens for review links.
@@ -46,6 +47,9 @@ export class ReviewTokenService {
       }
       if (decoded.sourcePlatform) {
         result.sourcePlatform = decoded.sourcePlatform;
+      }
+      if (decoded.notificationId) {
+        result.notificationId = decoded.notificationId;
       }
       return result;
     } catch {

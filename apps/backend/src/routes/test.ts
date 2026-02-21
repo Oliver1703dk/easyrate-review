@@ -95,10 +95,21 @@ router.post(
         const smsCustomer: ReviewTokenCustomer = { phone: input.phone };
         if (input.customerName) smsCustomer.name = input.customerName;
 
+        // Step 1: Create notification placeholder
+        const smsNotification = await notificationService.create(businessId, {
+          type: 'sms',
+          recipient: input.phone,
+          content: '',
+          reviewLink: '',
+          orderId: `test-${String(Date.now())}`,
+        });
+
+        // Step 2: Generate token with notificationId for click tracking
         const smsToken = reviewTokenService.generateToken({
           businessId,
           customer: smsCustomer,
           sourcePlatform: 'test',
+          notificationId: smsNotification.id,
         });
 
         const smsLink = `${baseUrl}/r/${smsToken}?isTest=true`;
@@ -111,12 +122,10 @@ router.post(
         }
         const smsContent = templateService.renderSmsReviewRequest(templateVars);
 
-        const smsNotification = await notificationService.create(businessId, {
-          type: 'sms',
-          recipient: input.phone,
+        // Step 3: Update notification with actual content and link
+        await notificationService.updateContent(smsNotification.id, {
           content: smsContent,
           reviewLink: smsLink,
-          orderId: `test-${String(Date.now())}`,
         });
 
         notifications.push({
@@ -132,10 +141,22 @@ router.post(
         const emailCustomer: ReviewTokenCustomer = { email: input.email };
         if (input.customerName) emailCustomer.name = input.customerName;
 
+        // Step 1: Create notification placeholder
+        const emailNotification = await notificationService.create(businessId, {
+          type: 'email',
+          recipient: input.email,
+          content: '',
+          subject: '',
+          reviewLink: '',
+          orderId: `test-${String(Date.now())}`,
+        });
+
+        // Step 2: Generate token with notificationId for click tracking
         const emailToken = reviewTokenService.generateToken({
           businessId,
           customer: emailCustomer,
           sourcePlatform: 'test',
+          notificationId: emailNotification.id,
         });
 
         const emailLink = `${baseUrl}/r/${emailToken}?isTest=true`;
@@ -148,13 +169,11 @@ router.post(
         }
         const { subject, body } = templateService.renderEmailReviewRequest(emailTemplateVars);
 
-        const emailNotification = await notificationService.create(businessId, {
-          type: 'email',
-          recipient: input.email,
+        // Step 3: Update notification with actual content and link
+        await notificationService.updateContent(emailNotification.id, {
           content: body,
           subject,
           reviewLink: emailLink,
-          orderId: `test-${String(Date.now())}`,
         });
 
         notifications.push({
