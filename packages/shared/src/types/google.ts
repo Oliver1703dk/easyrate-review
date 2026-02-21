@@ -99,6 +99,7 @@ export interface ExternalReviewStats {
   withReply: number;
   withAttribution: number;
   bySource: Record<ExternalReviewSource, number>;
+  recentTrend: number;
 }
 
 export interface GoogleOAuthState {

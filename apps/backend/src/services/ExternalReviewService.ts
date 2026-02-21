@@ -116,6 +116,18 @@ export class ExternalReviewService {
       ? { reviewedAt: { $gte: dateRange.from, $lte: dateRange.to } }
       : {};
 
+    let previousPeriodCount = 0;
+    if (dateRange) {
+      const duration = dateRange.to.getTime() - dateRange.from.getTime();
+      const previousFrom = new Date(dateRange.from.getTime() - duration);
+      const previousTo = dateRange.from;
+
+      previousPeriodCount = await ExternalReview.countDocuments({
+        businessId: businessObjectId,
+        reviewedAt: { $gte: previousFrom, $lt: previousTo },
+      });
+    }
+
     const [mainAggregation] = await ExternalReview.aggregate([
       { $match: { businessId: businessObjectId, ...dateMatch } },
       {
@@ -162,7 +174,15 @@ export class ExternalReviewService {
         withReply: 0,
         withAttribution: 0,
         bySource: bySource as Record<'google' | 'trustpilot', number>,
+        recentTrend: 0,
       };
+    }
+
+    let recentTrend = 0;
+    if (dateRange && previousPeriodCount > 0) {
+      recentTrend = Math.round(((mainAggregation.total - previousPeriodCount) / previousPeriodCount) * 100);
+    } else if (dateRange && previousPeriodCount === 0 && mainAggregation.total > 0) {
+      recentTrend = 100;
     }
 
     return {
@@ -181,6 +201,7 @@ export class ExternalReviewService {
       withReply: mainAggregation.withReply,
       withAttribution: mainAggregation.withAttribution,
       bySource: bySource as Record<'google' | 'trustpilot', number>,
+      recentTrend,
     };
   }
 
