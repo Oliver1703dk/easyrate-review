@@ -1,4 +1,4 @@
-import { Business, type BusinessDocument } from '../models/Business.js';
+import { Business } from '../models/Business.js';
 import { orderQueueService, type QueuedOrder } from '../services/OrderQueueService.js';
 import { notificationService } from '../services/NotificationService.js';
 import { reviewTokenService } from '../services/ReviewTokenService.js';
@@ -16,8 +16,8 @@ const DEFAULT_CONFIG: ProcessorConfig = {
 class OrderQueueProcessor {
   private config: ProcessorConfig;
   private intervalId: ReturnType<typeof setInterval> | null = null;
-  private isRunning: boolean = false;
-  private isProcessing: boolean = false;
+  private isRunning = false;
+  private isProcessing = false;
 
   constructor(config: Partial<ProcessorConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -30,16 +30,16 @@ class OrderQueueProcessor {
     }
 
     this.isRunning = true;
-    console.log(`[OrderQueueProcessor] Starting with ${this.config.intervalMs}ms interval`);
+    console.log(`[OrderQueueProcessor] Starting with ${String(this.config.intervalMs)}ms interval`);
 
     // Run first processing immediately
-    this.processQueue().catch((error) => {
+    this.processQueue().catch((error: unknown) => {
       console.error('[OrderQueueProcessor] Initial process error:', error);
     });
 
     // Set up interval for subsequent processing
     this.intervalId = setInterval(() => {
-      this.processQueue().catch((error) => {
+      this.processQueue().catch((error: unknown) => {
         console.error('[OrderQueueProcessor] Process error:', error);
       });
     }, this.config.intervalMs);
@@ -75,7 +75,7 @@ class OrderQueueProcessor {
         return;
       }
 
-      console.log(`[OrderQueueProcessor] Processing ${dueOrders.length} due orders`);
+      console.log(`[OrderQueueProcessor] Processing ${String(dueOrders.length)} due orders`);
 
       // Process in batches
       for (let i = 0; i < dueOrders.length; i += this.config.batchSize) {
@@ -95,7 +95,7 @@ class OrderQueueProcessor {
       await orderQueueService.markProcessing(id);
 
       // Load business config
-      const business = await Business.findById(businessId) as BusinessDocument | null;
+      const business = await Business.findById(businessId);
       if (!business) {
         await orderQueueService.markFailed(id, 'Business not found');
         return;
@@ -138,22 +138,24 @@ class OrderQueueProcessor {
       }
 
       // Get message templates
-      const smsTemplate = business.messageTemplates.sms ||
+      const smsTemplate =
+        business.messageTemplates.sms ??
         `Tak for dit besøg hos ${business.name}! Del venligst din oplevelse: {link}`;
-      const emailTemplate = business.messageTemplates.email ||
+      const emailTemplate =
+        business.messageTemplates.email ??
         `Tak for dit besøg hos ${business.name}! Vi vil meget gerne høre om din oplevelse.`;
 
-      const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const baseUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
 
       // Create SMS notification if enabled
       // Flow: 1) Create notification without content, 2) Generate token with notificationId, 3) Update notification with content
       if (shouldSendSms && orderData.customerPhone) {
-        // Step 1: Create notification without final content (placeholder)
+        // Step 1: Create notification placeholder (non-empty to pass validation)
         const smsNotification = await notificationService.create(businessId, {
           type: 'sms',
           recipient: orderData.customerPhone,
-          content: '', // Will be updated after token generation
-          reviewLink: '', // Will be updated after token generation
+          content: 'pending',
+          reviewLink: 'pending',
           orderId: orderData.orderId,
         });
 
@@ -181,13 +183,13 @@ class OrderQueueProcessor {
 
       // Create email notification if enabled
       if (shouldSendEmail && orderData.customerEmail) {
-        // Step 1: Create notification without final content (placeholder)
+        // Step 1: Create notification placeholder (non-empty to pass validation)
         const emailNotification = await notificationService.create(businessId, {
           type: 'email',
           recipient: orderData.customerEmail,
-          subject: `Hvordan var din oplevelse hos ${business.name}?`,
-          content: '', // Will be updated after token generation
-          reviewLink: '', // Will be updated after token generation
+          subject: 'pending',
+          content: 'pending',
+          reviewLink: 'pending',
           orderId: orderData.orderId,
         });
 

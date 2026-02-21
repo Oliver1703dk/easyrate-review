@@ -95,12 +95,12 @@ router.post(
         const smsCustomer: ReviewTokenCustomer = { phone: input.phone };
         if (input.customerName) smsCustomer.name = input.customerName;
 
-        // Step 1: Create notification placeholder
+        // Step 1: Create notification placeholder (non-empty to pass validation)
         const smsNotification = await notificationService.create(businessId, {
           type: 'sms',
           recipient: input.phone,
-          content: '',
-          reviewLink: '',
+          content: 'pending',
+          reviewLink: 'pending',
           orderId: `test-${String(Date.now())}`,
         });
 
@@ -141,13 +141,13 @@ router.post(
         const emailCustomer: ReviewTokenCustomer = { email: input.email };
         if (input.customerName) emailCustomer.name = input.customerName;
 
-        // Step 1: Create notification placeholder
+        // Step 1: Create notification placeholder (non-empty to pass validation)
         const emailNotification = await notificationService.create(businessId, {
           type: 'email',
           recipient: input.email,
-          content: '',
-          subject: '',
-          reviewLink: '',
+          content: 'pending',
+          subject: 'pending',
+          reviewLink: 'pending',
           orderId: `test-${String(Date.now())}`,
         });
 
