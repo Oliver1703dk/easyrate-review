@@ -76,12 +76,14 @@ export class GoogleBusinessProvider {
       if (!response.ok) {
         const error = await response.json();
         this.logError('Failed to fetch accounts', error);
-        throw new Error(`Failed to fetch Google accounts: ${response.status}`);
+        throw new Error(`Failed to fetch Google accounts: ${String(response.status)}`);
       }
 
-      const data = (await response.json()) as { accounts?: Array<{ name: string; accountName: string }> };
+      const data = (await response.json()) as {
+        accounts?: { name: string; accountName: string }[];
+      };
 
-      return (data.accounts || []).map((account) => ({
+      return (data.accounts ?? []).map((account) => ({
         id: account.name.replace('accounts/', ''),
         name: account.name,
         accountName: account.accountName,
@@ -97,37 +99,57 @@ export class GoogleBusinessProvider {
    */
   async getLocations(accessToken: string, accountId?: string): Promise<GoogleLocation[]> {
     try {
-      // First get accounts if accountId not provided
-      let accountName: string;
-      if (accountId) {
-        accountName = accountId.startsWith('accounts/') ? accountId : `accounts/${accountId}`;
-      } else {
-        const accounts = await this.getAccounts(accessToken);
-        if (accounts.length === 0) {
-          this.log('No Google Business accounts found');
-          return [];
-        }
-        accountName = accounts[0]!.name;
+      const accounts = await this.getAccounts(accessToken);
+      if (accounts.length === 0) {
+        this.log('No Google Business accounts found');
+        return [];
       }
 
-      const response = await fetch(
-        `${GOOGLE_MY_BUSINESS_API}/${accountName}/locations?readMask=name,title,storefrontAddress,phoneNumbers,websiteUri,metadata`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
+      // If accountId provided, only fetch locations for that account
+      // Otherwise, fetch locations for ALL accounts
+      const accountsToQuery = accountId
+        ? accounts.filter((a) => a.id === accountId || a.name === accountId)
+        : accounts;
 
-      if (!response.ok) {
-        const error = await response.json();
-        this.logError('Failed to fetch locations', error);
-        throw new Error(`Failed to fetch locations: ${response.status}`);
+      if (accountsToQuery.length === 0) {
+        this.log('Specified account not found', { accountId });
+        return [];
       }
 
-      const data = (await response.json()) as { locations?: GoogleLocationFromAPI[] };
+      const allLocations: GoogleLocation[] = [];
 
-      return (data.locations || []).map((location) => this.transformLocation(location));
+      for (const account of accountsToQuery) {
+        const accountName = account.name.startsWith('accounts/')
+          ? account.name
+          : `accounts/${account.name}`;
+        try {
+          const response = await fetch(
+            `${GOOGLE_MY_BUSINESS_API}/${accountName}/locations?readMask=name,title,storefrontAddress,phoneNumbers,websiteUri,metadata`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+
+          if (!response.ok) {
+            const error = await response.json();
+            this.logError(`Failed to fetch locations for account ${accountName}`, error);
+            continue; // Skip this account, try the rest
+          }
+
+          const data = (await response.json()) as { locations?: GoogleLocationFromAPI[] };
+          const locations = (data.locations ?? []).map((location) =>
+            this.transformLocation(location)
+          );
+          allLocations.push(...locations);
+        } catch (error) {
+          this.logError(`Error fetching locations for account ${accountName}`, error);
+          // Continue with other accounts
+        }
+      }
+
+      return allLocations;
     } catch (error) {
       this.logError('Error fetching locations', error);
       throw error;
@@ -141,7 +163,7 @@ export class GoogleBusinessProvider {
     accessToken: string,
     locationName: string,
     pageToken?: string,
-    pageSize: number = 50
+    pageSize = 50
   ): Promise<GoogleReviewsResponse> {
     try {
       // Use the correct API endpoint for reviews
@@ -166,7 +188,7 @@ export class GoogleBusinessProvider {
       if (!response.ok) {
         const error = await response.json();
         this.logError('Failed to fetch reviews', error);
-        throw new Error(`Failed to fetch reviews: ${response.status}`);
+        throw new Error(`Failed to fetch reviews: ${String(response.status)}`);
       }
 
       const data = (await response.json()) as {
@@ -176,8 +198,8 @@ export class GoogleBusinessProvider {
       };
 
       const result: GoogleReviewsResponse = {
-        reviews: (data.reviews || []).map((review) => this.transformReview(review)),
-        totalCount: data.totalReviewCount || 0,
+        reviews: (data.reviews ?? []).map((review) => this.transformReview(review)),
+        totalCount: data.totalReviewCount ?? 0,
       };
       if (data.nextPageToken) {
         result.nextPageToken = data.nextPageToken;
@@ -192,10 +214,7 @@ export class GoogleBusinessProvider {
   /**
    * Get all reviews for a location (handles pagination)
    */
-  async getAllReviews(
-    accessToken: string,
-    locationName: string
-  ): Promise<GoogleReview[]> {
+  async getAllReviews(accessToken: string, locationName: string): Promise<GoogleReview[]> {
     const allReviews: GoogleReview[] = [];
     let pageToken: string | undefined;
 
@@ -220,26 +239,23 @@ export class GoogleBusinessProvider {
     try {
       const reviewsApiUrl = 'https://mybusiness.googleapis.com/v4';
 
-      const response = await fetch(
-        `${reviewsApiUrl}/${reviewName}/reply`,
-        {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            comment: replyText,
-          }),
-        }
-      );
+      const response = await fetch(`${reviewsApiUrl}/${reviewName}/reply`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          comment: replyText,
+        }),
+      });
 
       if (!response.ok) {
         const error = await response.json();
         this.logError('Failed to post reply', error);
         return {
           success: false,
-          error: `Failed to post reply: ${response.status}`,
+          error: `Failed to post reply: ${String(response.status)}`,
         };
       }
 
@@ -265,22 +281,19 @@ export class GoogleBusinessProvider {
     try {
       const reviewsApiUrl = 'https://mybusiness.googleapis.com/v4';
 
-      const response = await fetch(
-        `${reviewsApiUrl}/${reviewName}/reply`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
+      const response = await fetch(`${reviewsApiUrl}/${reviewName}/reply`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
 
       if (!response.ok) {
         const error = await response.json();
         this.logError('Failed to delete reply', error);
         return {
           success: false,
-          error: `Failed to delete reply: ${response.status}`,
+          error: `Failed to delete reply: ${String(response.status)}`,
         };
       }
 
@@ -299,12 +312,8 @@ export class GoogleBusinessProvider {
    * Transform Google API location to our format
    */
   private transformLocation(location: GoogleLocationFromAPI): GoogleLocation {
-    const addressLines = location.address?.addressLines || [];
-    const address = [
-      ...addressLines,
-      location.address?.locality,
-      location.address?.postalCode,
-    ]
+    const addressLines = location.address?.addressLines ?? [];
+    const address = [...addressLines, location.address?.locality, location.address?.postalCode]
       .filter(Boolean)
       .join(', ');
 
@@ -334,7 +343,7 @@ export class GoogleBusinessProvider {
     const result: GoogleReview = {
       externalId: review.reviewId,
       reviewerName: review.reviewer.displayName,
-      rating: STAR_RATING_MAP[review.starRating] || 3,
+      rating: STAR_RATING_MAP[review.starRating] ?? 3,
       reviewedAt: new Date(review.createTime),
       resourceName: review.name,
     };

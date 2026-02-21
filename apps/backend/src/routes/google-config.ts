@@ -1,4 +1,5 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import { z } from 'zod';
 import { googleAuthService } from '../services/GoogleAuthService.js';
 import { googleBusinessProvider } from '../providers/google/GoogleBusinessProvider.js';
@@ -11,17 +12,28 @@ import { Business } from '../models/Business.js';
 
 const router = Router();
 
+function getBusinessId(req: Request): string {
+  const id = req.businessId;
+  if (!id) throw new ValidationError('Business ID required');
+  return id;
+}
+
 // GET /api/v1/google/locations - List available Google Business locations
 router.get(
   '/locations',
   authenticateJwt,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Get valid access token
-      const accessToken = await googleAuthService.getValidToken(req.businessId!);
+      const businessId = getBusinessId(req);
 
-      // Fetch locations from Google
-      const locations = await googleBusinessProvider.getLocations(accessToken);
+      // Get valid access token
+      const accessToken = await googleAuthService.getValidToken(businessId);
+
+      // Pass saved accountId if available, otherwise fetches from all accounts
+      const business = await Business.findById(businessId);
+      const savedAccountId = business?.settings.googleBusiness?.accountId;
+
+      const locations = await googleBusinessProvider.getLocations(accessToken, savedAccountId);
 
       sendSuccess(res, { locations });
     } catch (error) {
@@ -44,12 +56,12 @@ router.post(
     try {
       const { locationIds } = req.body as z.infer<typeof saveLocationsSchema>;
 
-      const business = await Business.findById(req.businessId!);
+      const business = await Business.findById(getBusinessId(req));
       if (!business) {
         throw new ValidationError('Virksomhed ikke fundet');
       }
 
-      if (!business.settings?.googleBusiness?.enabled) {
+      if (!business.settings.googleBusiness?.enabled) {
         throw new ValidationError('Google er ikke forbundet');
       }
 
@@ -70,9 +82,9 @@ router.get(
   authenticateJwt,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const business = await businessService.findByIdOrThrow(req.businessId!);
+      const business = await businessService.findByIdOrThrow(getBusinessId(req));
 
-      const googleSettings = business.settings?.googleBusiness;
+      const googleSettings = business.settings.googleBusiness;
       if (!googleSettings) {
         sendSuccess(res, {
           enabled: false,
@@ -119,12 +131,12 @@ router.put(
     try {
       const updates = req.body as z.infer<typeof updateSettingsSchema>;
 
-      const business = await Business.findById(req.businessId!);
+      const business = await Business.findById(getBusinessId(req));
       if (!business) {
         throw new ValidationError('Virksomhed ikke fundet');
       }
 
-      if (!business.settings?.googleBusiness?.enabled) {
+      if (!business.settings.googleBusiness?.enabled) {
         throw new ValidationError('Google er ikke forbundet');
       }
 
@@ -168,7 +180,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Get valid access token
-      const accessToken = await googleAuthService.getValidToken(req.businessId!);
+      const accessToken = await googleAuthService.getValidToken(getBusinessId(req));
 
       // Fetch accounts from Google
       const accounts = await googleBusinessProvider.getAccounts(accessToken);
@@ -194,12 +206,12 @@ router.post(
     try {
       const { accountId } = req.body as z.infer<typeof saveAccountSchema>;
 
-      const business = await Business.findById(req.businessId!);
+      const business = await Business.findById(getBusinessId(req));
       if (!business) {
         throw new ValidationError('Virksomhed ikke fundet');
       }
 
-      if (!business.settings?.googleBusiness?.enabled) {
+      if (!business.settings.googleBusiness?.enabled) {
         throw new ValidationError('Google er ikke forbundet');
       }
 
