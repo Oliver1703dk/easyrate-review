@@ -1,4 +1,5 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import type { Document, Model } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import type { Review as ReviewType } from '@easyrate/shared';
 
 export interface ReviewDocument extends Omit<ReviewType, 'id' | 'businessId'>, Document {
@@ -50,7 +51,7 @@ const reviewSchema = new Schema<ReviewDocument>(
     },
     sourcePlatform: {
       type: String,
-      enum: ['dully', 'easytable', 'direct'],
+      enum: ['dully', 'easytable', 'direct', 'test'],
       required: true,
     },
     orderId: {
@@ -128,7 +129,4 @@ reviewSchema.index({ businessId: 1, rating: 1 });
 reviewSchema.index({ businessId: 1, sourcePlatform: 1 });
 reviewSchema.index({ locationId: 1 });
 
-export const Review: Model<ReviewDocument> = mongoose.model<ReviewDocument>(
-  'Review',
-  reviewSchema
-);
+export const Review: Model<ReviewDocument> = mongoose.model<ReviewDocument>('Review', reviewSchema);
