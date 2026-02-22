@@ -120,7 +120,7 @@ RULES:
     const feedbackText = review.feedbackText ?? '';
     const isNegative = review.rating <= 3;
 
-    if (isNegative) {
+    if (isNegative && feedbackText) {
       return `You are a customer service representative for ${businessName}.
 
 Write a professional, empathetic response to this customer review.
@@ -137,6 +137,27 @@ RULES:
 5. Max 150 words
 6. Avoid repeating specific criticism
 7. End with an invitation to return
+
+Reply ONLY with the response text, no explanations.`;
+    }
+
+    if (isNegative) {
+      return `You are a customer service representative for ${businessName}.
+
+Write a professional, empathetic response to a customer who left a low rating without specific feedback.
+
+RATING: ${String(review.rating)}/5 stars
+CUSTOMER NAME: ${customerName}
+
+RULES:
+1. Acknowledge that they had a less than ideal experience
+2. Apologise sincerely for the poor experience
+3. Express that their feedback matters and invite them to share more details
+4. Offer to make things right (do not offer discounts or deals)
+5. Keep the tone professional but warm
+6. Max 100 words
+7. Avoid assuming what went wrong
+8. End with an invitation to return
 
 Reply ONLY with the response text, no explanations.`;
     }

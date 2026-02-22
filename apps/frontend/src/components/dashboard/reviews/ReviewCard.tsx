@@ -51,12 +51,8 @@ export function ReviewCard({ review, onReplySuccess }: ReviewCardProps) {
 
   const hasEmail = Boolean(review.customer?.email);
   const hasResponse = Boolean(review.response);
-  const hasFeedbackText = Boolean(review.feedbackText);
-  const isPositiveReview = review.rating >= 4;
   const canReply = hasEmail && !hasResponse;
-  // Allow AI response for: reviews with feedback text OR positive reviews (even without feedback)
-  const canGenerateResponse =
-    canReply && (hasFeedbackText || isPositiveReview) && (generationStatus?.canGenerate ?? true);
+  const canGenerateResponse = canReply && (generationStatus?.canGenerate ?? true);
 
   const handleSendReply = async () => {
     if (!replyText.trim()) return;
@@ -162,23 +158,21 @@ export function ReviewCard({ review, onReplySuccess }: ReviewCardProps) {
                   <MessageSquare className="mr-2 h-4 w-4" />
                   {DASHBOARD_TEXT.reviews.reply}
                 </Button>
-                {(hasFeedbackText || isPositiveReview) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleGenerateResponse}
-                    disabled={isGenerating || !canGenerateResponse}
-                  >
-                    {isGenerating ? (
-                      <Spinner size="sm" className="mr-2" />
-                    ) : (
-                      <Sparkles className="mr-2 h-4 w-4" />
-                    )}
-                    {isGenerating
-                      ? DASHBOARD_TEXT.reviews.generating
-                      : DASHBOARD_TEXT.reviews.generateResponse}
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateResponse}
+                  disabled={isGenerating || !canGenerateResponse}
+                >
+                  {isGenerating ? (
+                    <Spinner size="sm" className="mr-2" />
+                  ) : (
+                    <Sparkles className="mr-2 h-4 w-4" />
+                  )}
+                  {isGenerating
+                    ? DASHBOARD_TEXT.reviews.generating
+                    : DASHBOARD_TEXT.reviews.generateResponse}
+                </Button>
                 {generationStatus && (
                   <span className="text-xs text-muted-foreground">
                     {generationStatus.canGenerate
