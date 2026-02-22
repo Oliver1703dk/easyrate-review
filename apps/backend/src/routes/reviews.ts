@@ -95,6 +95,20 @@ router.get(
   }
 );
 
+// GET /api/v1/reviews/feedback-metrics - Get internal feedback performance metrics
+router.get(
+  '/feedback-metrics',
+  authenticateJwt,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const metrics = await reviewService.getFeedbackMetrics(req.businessId!);
+      sendSuccess(res, metrics);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // GET /api/v1/reviews/:id - Get single review
 router.get(
   '/:id',

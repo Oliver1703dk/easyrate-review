@@ -6,6 +6,7 @@ import type {
   ConsentRecord,
   ReviewStats,
   ResponseGenerationStatus,
+  InternalFeedbackMetrics,
 } from '@easyrate/shared';
 import { EMAIL_TEMPLATES } from '@easyrate/shared';
 import { Review, ReviewDocument } from '../models/Review.js';
@@ -218,6 +219,45 @@ export class ReviewService {
       bySource,
       recentTrend,
     };
+  }
+
+  async getFeedbackMetrics(businessId: string): Promise<InternalFeedbackMetrics> {
+    const businessObjectId = new mongoose.Types.ObjectId(businessId);
+
+    const [result] = await Review.aggregate([
+      { $match: { businessId: businessObjectId } },
+      {
+        $group: {
+          _id: null,
+          received: { $sum: 1 },
+          responded: {
+            $sum: { $cond: [{ $ne: ['$response', null] }, 1, 0] },
+          },
+          totalResponseTimeMs: {
+            $sum: {
+              $cond: [
+                { $ne: ['$response', null] },
+                { $subtract: ['$response.sentAt', '$createdAt'] },
+                0,
+              ],
+            },
+          },
+        },
+      },
+    ]);
+
+    if (!result) {
+      return { received: 0, responded: 0, responseRate: 0, avgResponseTime: 0, pending: 0 };
+    }
+
+    const { received, responded, totalResponseTimeMs } = result;
+    const pending = received - responded;
+    const responseRate = received > 0 ? Math.round((responded / received) * 100) : 0;
+    const avgResponseTime = responded > 0
+      ? Math.round((totalResponseTimeMs / responded / (1000 * 60 * 60)) * 10) / 10
+      : 0;
+
+    return { received, responded, responseRate, avgResponseTime, pending };
   }
 
   async markExternalReviewSubmitted(
