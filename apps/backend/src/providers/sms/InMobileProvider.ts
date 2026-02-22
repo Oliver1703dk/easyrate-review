@@ -83,7 +83,7 @@ export class InMobileProvider extends BaseProvider implements SmsProvider {
       const messagePayload: Record<string, unknown> = {
         to: msisdn,
         text: message.content,
-        from: message.from || this.senderId,
+        from: message.fromName?.slice(0, 11) || message.from || this.senderId,
         encoding: requiresUcs2Encoding(message.content) ? 'ucs2' : 'gsm7',
         respectBlacklist: true,
       };

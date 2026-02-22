@@ -44,7 +44,8 @@ export class ResendProvider extends BaseProvider implements EmailProvider {
       await this.waitForRateLimit();
 
       const fromAddress = message.from ?? this.fromEmail;
-      const from = this.fromName ? `${this.fromName} <${fromAddress}>` : fromAddress;
+      const senderName = message.fromName ?? this.fromName;
+      const from = senderName ? `${senderName} <${fromAddress}>` : fromAddress;
 
       const { data, error } = await this.client.emails.send({
         from,

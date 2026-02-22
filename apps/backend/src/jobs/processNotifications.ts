@@ -132,7 +132,7 @@ class NotificationProcessor {
       if (notification.type === 'sms') {
         await this.sendSms(notification, business);
       } else {
-        await this.sendEmail(notification);
+        await this.sendEmail(notification, business);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -165,6 +165,10 @@ class NotificationProcessor {
       to: notification.recipient,
       content: notification.content,
     };
+
+    if (business?.name) {
+      message.fromName = business.name;
+    }
 
     console.log(`[NotificationProcessor] Sending SMS to ${notification.recipient}`);
 
@@ -201,7 +205,10 @@ class NotificationProcessor {
     }
   }
 
-  private async sendEmail(notification: NotificationDocument): Promise<void> {
+  private async sendEmail(
+    notification: NotificationDocument,
+    business: BusinessDocument | null
+  ): Promise<void> {
     const notificationId = String(notification._id);
 
     if (!isEmailConfigured()) {
@@ -221,6 +228,10 @@ class NotificationProcessor {
 
     if (notification.subject) {
       message.subject = notification.subject;
+    }
+
+    if (business?.name) {
+      message.fromName = business.name;
     }
 
     console.log(`[NotificationProcessor] Sending email to ${notification.recipient}`);

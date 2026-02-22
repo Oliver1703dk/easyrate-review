@@ -2,6 +2,7 @@ export interface Message {
   to: string;
   content: string;
   from?: string;
+  fromName?: string; // Per-message sender display name (email) or sender ID (SMS)
   subject?: string; // For email
   html?: string; // For email
 }
