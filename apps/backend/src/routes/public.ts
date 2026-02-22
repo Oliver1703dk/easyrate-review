@@ -8,6 +8,7 @@ import { reviewService } from '../services/ReviewService.js';
 import { notificationService } from '../services/NotificationService.js';
 import { storageService, ALLOWED_CONTENT_TYPES } from '../services/StorageService.js';
 import { reviewTokenService } from '../services/ReviewTokenService.js';
+import { reviewLinkService } from '../services/ReviewLinkService.js';
 import { validateBody, validateParams } from '../middleware/validate.js';
 import { sendSuccess } from '../utils/response.js';
 import { NotFoundError } from '../utils/errors.js';
@@ -64,8 +65,15 @@ async function resolveToken(token: string): Promise<ResolvedToken> {
     businessId = payload.businessId;
     tokenPayload = payload;
   } else {
-    // Plain businessId for backwards compatibility
-    businessId = token;
+    // Try short-code lookup
+    const shortCodePayload = await reviewLinkService.resolveShortCode(token);
+    if (shortCodePayload) {
+      businessId = shortCodePayload.businessId;
+      tokenPayload = shortCodePayload;
+    } else {
+      // Plain businessId for backwards compatibility
+      businessId = token;
+    }
   }
 
   // Find business

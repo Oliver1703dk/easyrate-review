@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { authenticateJwt } from '../middleware/auth.js';
 import { validateBody } from '../middleware/validate.js';
-import { reviewTokenService } from '../services/ReviewTokenService.js';
+import { reviewLinkService } from '../services/ReviewLinkService.js';
 import { notificationService } from '../services/NotificationService.js';
 import { templateService, type TemplateVariables } from '../services/TemplateService.js';
 import { Business } from '../models/Business.js';
@@ -35,7 +35,7 @@ const testOrderSchema = z
  * POST /api/v1/test/review-link
  * Generate a JWT-based test review link for the authenticated business
  */
-router.post('/review-link', authenticateJwt, (req: Request, res: Response, next: NextFunction) => {
+router.post('/review-link', authenticateJwt, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const businessId = req.user?.businessId;
     if (!businessId) {
@@ -43,15 +43,15 @@ router.post('/review-link', authenticateJwt, (req: Request, res: Response, next:
       return;
     }
 
-    // Generate JWT token with test customer data
-    const token = reviewTokenService.generateToken({
+    // Generate short-code link with test customer data
+    const shortCode = await reviewLinkService.createShortLink({
       businessId,
       customer: TEST_CUSTOMER,
       sourcePlatform: 'direct',
     });
 
     const baseUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
-    const link = `${baseUrl}/r/${token}?isTest=true`;
+    const link = `${baseUrl}/r/${shortCode}?isTest=true`;
 
     sendSuccess(res, { link });
   } catch (error) {
@@ -104,15 +104,15 @@ router.post(
           orderId: `test-${String(Date.now())}`,
         });
 
-        // Step 2: Generate token with notificationId for click tracking
-        const smsToken = reviewTokenService.generateToken({
+        // Step 2: Generate short-code link with notificationId for click tracking
+        const smsShortCode = await reviewLinkService.createShortLink({
           businessId,
           customer: smsCustomer,
           sourcePlatform: 'test',
           notificationId: smsNotification.id,
         });
 
-        const smsLink = `${baseUrl}/r/${smsToken}?isTest=true`;
+        const smsLink = `${baseUrl}/r/${smsShortCode}?isTest=true`;
         const templateVars: TemplateVariables = {
           businessName: business.name,
           reviewLink: smsLink,
@@ -151,15 +151,15 @@ router.post(
           orderId: `test-${String(Date.now())}`,
         });
 
-        // Step 2: Generate token with notificationId for click tracking
-        const emailToken = reviewTokenService.generateToken({
+        // Step 2: Generate short-code link with notificationId for click tracking
+        const emailShortCode = await reviewLinkService.createShortLink({
           businessId,
           customer: emailCustomer,
           sourcePlatform: 'test',
           notificationId: emailNotification.id,
         });
 
-        const emailLink = `${baseUrl}/r/${emailToken}?isTest=true`;
+        const emailLink = `${baseUrl}/r/${emailShortCode}?isTest=true`;
         const emailTemplateVars: TemplateVariables = {
           businessName: business.name,
           reviewLink: emailLink,

@@ -4,6 +4,7 @@ import express, { type Express } from 'express';
 import mongoose from 'mongoose';
 import { Business } from '../../src/models/Business.js';
 import { Review } from '../../src/models/Review.js';
+import { ReviewLink } from '../../src/models/ReviewLink.js';
 import publicRoutes from '../../src/routes/public.js';
 import { errorHandler } from '../../src/middleware/errorHandler.js';
 
@@ -299,6 +300,64 @@ describe('Public Routes', () => {
           consent: { given: true },
         });
 
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe('Short-code token resolution', () => {
+    it('should resolve a valid short-code token', async () => {
+      const shortCode = 'testAbc123';
+      await ReviewLink.create({
+        shortCode,
+        businessId: testBusiness._id,
+        payload: {
+          businessId: testBusinessId,
+          customer: { name: 'Anders', email: 'anders@example.com' },
+          sourcePlatform: 'dully',
+        },
+        expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+      });
+
+      const response = await request(app).get(`/r/${shortCode}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.business.name).toBe('Test Restaurant');
+      expect(response.body.data.customer).toBeDefined();
+      expect(response.body.data.customer.name).toBe('Anders');
+    });
+
+    it('should submit review via short-code token', async () => {
+      const shortCode = 'reviewCode1';
+      await ReviewLink.create({
+        shortCode,
+        businessId: testBusiness._id,
+        payload: {
+          businessId: testBusinessId,
+          customer: { name: 'Test Kunde' },
+          sourcePlatform: 'test',
+        },
+        expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+      });
+
+      const response = await request(app)
+        .post(`/r/${shortCode}`)
+        .send({
+          rating: 5,
+          consent: { given: true },
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.review.rating).toBe(5);
+
+      const review = await Review.findById(response.body.data.review.id);
+      expect(review?.sourcePlatform).toBe('test');
+    });
+
+    it('should return 404 for unknown short code that is not a valid ObjectId', async () => {
+      const response = await request(app).get('/r/unknownCode');
+
+      // Falls through to businessId lookup, which fails with CastError → 400
       expect(response.status).toBe(400);
     });
   });

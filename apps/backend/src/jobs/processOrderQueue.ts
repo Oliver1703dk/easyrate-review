@@ -1,7 +1,7 @@
 import { Business } from '../models/Business.js';
 import { orderQueueService, type QueuedOrder } from '../services/OrderQueueService.js';
 import { notificationService } from '../services/NotificationService.js';
-import { reviewTokenService } from '../services/ReviewTokenService.js';
+import { reviewLinkService } from '../services/ReviewLinkService.js';
 
 interface ProcessorConfig {
   intervalMs: number;
@@ -159,15 +159,15 @@ class OrderQueueProcessor {
           orderId: orderData.orderId,
         });
 
-        // Step 2: Generate JWT with notificationId for click tracking
-        const smsToken = reviewTokenService.generateToken({
+        // Step 2: Generate short-code link with notificationId for click tracking
+        const smsShortCode = await reviewLinkService.createShortLink({
           businessId,
           ...(Object.keys(customer).length > 0 && { customer }),
           orderId: orderData.orderId,
           sourcePlatform: orderData.platform,
           notificationId: smsNotification.id,
         });
-        const smsReviewLink = `${baseUrl}/r/${smsToken}`;
+        const smsReviewLink = `${baseUrl}/r/${smsShortCode}`;
         const smsContent = smsTemplate.replace('{link}', smsReviewLink);
 
         // Step 3: Update notification with actual content and link
@@ -193,15 +193,15 @@ class OrderQueueProcessor {
           orderId: orderData.orderId,
         });
 
-        // Step 2: Generate JWT with notificationId for click tracking
-        const emailToken = reviewTokenService.generateToken({
+        // Step 2: Generate short-code link with notificationId for click tracking
+        const emailShortCode = await reviewLinkService.createShortLink({
           businessId,
           ...(Object.keys(customer).length > 0 && { customer }),
           orderId: orderData.orderId,
           sourcePlatform: orderData.platform,
           notificationId: emailNotification.id,
         });
-        const emailReviewLink = `${baseUrl}/r/${emailToken}`;
+        const emailReviewLink = `${baseUrl}/r/${emailShortCode}`;
         const emailContent = emailTemplate.replace('{link}', emailReviewLink);
 
         // Step 3: Update notification with actual content and link
