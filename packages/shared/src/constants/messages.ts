@@ -23,18 +23,7 @@ Med venlig hilsen,
   },
   reviewResponse: {
     subject: `Svar fra {{businessName}}`,
-    body: `Hej {{customerName}},
-
-Tak for din feedback. Her er vores svar:
-
----
-{{responseText}}
----
-
-Vi sætter stor pris på at du tog dig tid til at dele din oplevelse med os.
-
-Med venlig hilsen,
-{{businessName}}`,
+    body: `{{responseText}}`,
   },
 } as const;
 
