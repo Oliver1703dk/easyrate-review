@@ -221,11 +221,15 @@ export class ReviewService {
     };
   }
 
-  async getFeedbackMetrics(businessId: string): Promise<InternalFeedbackMetrics> {
+  async getFeedbackMetrics(businessId: string, dateRange?: { from: Date; to: Date }): Promise<InternalFeedbackMetrics> {
     const businessObjectId = new mongoose.Types.ObjectId(businessId);
 
+    const dateMatch: Record<string, unknown> = dateRange
+      ? { createdAt: { $gte: dateRange.from, $lte: dateRange.to } }
+      : {};
+
     const [result] = await Review.aggregate([
-      { $match: { businessId: businessObjectId } },
+      { $match: { businessId: businessObjectId, ...dateMatch } },
       {
         $group: {
           _id: null,

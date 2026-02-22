@@ -99,9 +99,14 @@ router.get(
 router.get(
   '/feedback-metrics',
   authenticateJwt,
+  validateQuery(statsQuerySchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const metrics = await reviewService.getFeedbackMetrics(req.businessId!);
+      const { fromDate, toDate } = req.query as z.infer<typeof statsQuerySchema>;
+      const dateRange = fromDate && toDate
+        ? { from: new Date(fromDate), to: new Date(toDate) }
+        : undefined;
+      const metrics = await reviewService.getFeedbackMetrics(req.businessId!, dateRange);
       sendSuccess(res, metrics);
     } catch (error) {
       next(error);
