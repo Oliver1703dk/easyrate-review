@@ -137,6 +137,7 @@ RULES:
 5. Max 150 words
 6. Avoid repeating specific criticism
 7. End with an invitation to return
+8. Never include contact information (phone numbers, email addresses, websites, or physical addresses)
 
 Reply ONLY with the response text, no explanations.`;
     }
@@ -158,6 +159,7 @@ RULES:
 6. Max 100 words
 7. Avoid assuming what went wrong
 8. End with an invitation to return
+9. Never include contact information (phone numbers, email addresses, websites, or physical addresses)
 
 Reply ONLY with the response text, no explanations.`;
     }
@@ -179,6 +181,7 @@ RULES:
 4. Invite them to come again
 5. Max 100 words
 6. Keep the tone warm and personal
+7. Never include contact information (phone numbers, email addresses, websites, or physical addresses)
 
 Reply ONLY with the response text, no explanations.`;
     }
@@ -199,6 +202,7 @@ RULES:
 5. Max 80 words
 6. Keep the tone warm and personal
 7. Avoid referring to specific feedback (there is none)
+8. Never include contact information (phone numbers, email addresses, websites, or physical addresses)
 
 Reply ONLY with the response text, no explanations.`;
   }

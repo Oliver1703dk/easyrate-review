@@ -331,6 +331,7 @@ export class ReviewService {
       to: review.customer.email,
       subject,
       content: body,
+      fromName: business.name,
     });
 
     if (!sendResult.success) {
